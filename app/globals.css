@@ -2252,7 +2252,7 @@ img { max-width: 100%; height: auto; }
 /* Payment badges */
 .checkout-payment-logos { margin-top: 18px; padding-top: 14px; border-top: 1px solid #eee; }
 .checkout-payment-logos__label { font-size: 0.78rem; color: #999; margin-bottom: 8px; }
-.checkout-payment-logos__badges { display: flex; gap: 8px; }
+.checkout-payment-logos__badges { display: flex; gap: 8px; flex-wrap: wrap; }
 .checkout-badge {
   padding: 4px 10px;
   border: 1.5px solid #ddd;
@@ -2262,6 +2262,95 @@ img { max-width: 100%; height: auto; }
   color: #444;
   letter-spacing: 0.5px;
 }
+.checkout-badge--paypal { color: #003087; border-color: #009cde; background: #f0f8ff; }
+.checkout-badge--reembolso { color: #2e7d32; border-color: #81c784; background: #f1f8f1; }
+.checkout-badge--sm { padding: 2px 7px; font-size: 0.68rem; }
+
+/* ── Selector método de pago ── */
+.checkout-pay-methods {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.checkout-pay-method {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #333;
+  background: #fff;
+  flex: 1;
+  min-width: 150px;
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
+  user-select: none;
+}
+/* Anula el rosa del template que aplica a label span */
+.checkout-pay-method span,
+.checkout-pay-method svg { color: inherit !important; }
+.checkout-pay-method input[type="radio"] { display: none; }
+.checkout-pay-method:hover { border-color: #999; background: #f7f7f7; }
+.checkout-pay-method--active {
+  border-color: #1a1a2e;
+  background: #1a1a2e;
+  color: #fff;
+}
+.checkout-pay-method--active span,
+.checkout-pay-method--active svg { color: #fff !important; }
+.checkout-pay-method__badges {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+.checkout-pay-method--active .checkout-badge--sm {
+  border-color: rgba(255,255,255,0.5);
+  color: #fff;
+  background: rgba(255,255,255,0.15);
+}
+
+/* ── Bloque de contenido del método ── */
+.checkout-pay-block { animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+.checkout-pay-block--paypal { padding: 4px 0; }
+.checkout-paypal-btn-wrap { max-width: 400px; margin-top: 12px; }
+.checkout-paypal-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  color: #7a5800;
+  line-height: 1.4;
+}
+.checkout-paypal-notice svg { flex-shrink: 0; margin-top: 1px; color: #d4930a; }
+
+/* ── Contra-reembolso ── */
+.checkout-reembolso-info {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: #f1f8f1;
+  border: 1px solid #81c784;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+  font-size: 0.88rem;
+  color: #1b5e20;
+  line-height: 1.5;
+}
+.checkout-reembolso-info strong { display: block; font-size: 0.95rem; margin-bottom: 4px; color: #1b5e20; }
+.checkout-reembolso-info p { margin: 4px 0 0; color: #2e7d32; }
+.checkout-reembolso-fee { margin-top: 8px !important; font-size: 0.82rem; color: #555 !important; }
+.checkout-pay-btn--reembolso { background: #2e7d32; }
+.checkout-pay-btn--reembolso:hover:not(:disabled) { background: #1b5e20; }
 
 /* Guarantee note */
 .checkout-summary-guarantee {

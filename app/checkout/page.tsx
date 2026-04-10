@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { useCart } from "@/lib/cart-context";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { useRouter } from "next/navigation";
 
 function formatEuro(n: number) {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
@@ -65,9 +67,15 @@ type TpvParams = {
   Firma: string;
 };
 
+type PayMethod = "tarjeta" | "paypal" | "reembolso";
+
 export default function CheckoutPage() {
-  const { items, totalPrice } = useCart();
+  const { items, totalPrice, clearCart } = useCart();
   const formRef = useRef<HTMLFormElement>(null);
+  const router  = useRouter();
+
+  // Método de pago seleccionado
+  const [payMethod, setPayMethod] = useState<PayMethod>("tarjeta");
 
   // Datos de contacto
   const [nombre,   setNombre]   = useState("");
@@ -80,12 +88,14 @@ export default function CheckoutPage() {
   const [ciudad,    setCiudad]    = useState("");
   const [provincia, setProvincia] = useState("");
 
-  const [loading,     setLoading]     = useState(false);
-  const [error,       setError]       = useState("");
-  const [tpvParams,   setTpvParams]   = useState<TpvParams | null>(null);
-  const [cpLooking,   setCpLooking]   = useState(false);
-  const [cpError,     setCpError]     = useState("");
-  const [zoneError,   setZoneError]   = useState("");       // zona sin envío
+  const [loading,        setLoading]        = useState(false);
+  const [error,          setError]          = useState("");
+  const [tpvParams,      setTpvParams]      = useState<TpvParams | null>(null);
+  const [cpLooking,      setCpLooking]      = useState(false);
+  const [cpError,        setCpError]        = useState("");
+  const [zoneError,      setZoneError]      = useState("");       // zona sin envío
+  const [paypalError,    setPaypalError]    = useState("");
+  const [reembolsoSent,  setReembolsoSent]  = useState(false);
 
   const envio      = totalPrice >= ENVIO_GRATIS_DESDE ? 0 : ENVIO;
   const totalFinal = totalPrice + envio;
@@ -114,8 +124,6 @@ export default function CheckoutPage() {
     }
 
     // ── Zona vetada: Madeira y Azores — salta desde el 1er dígito ──
-    // Ningún CP español empieza por 9 (van del 01 al 52), así que cualquier
-    // CP que empiece por 9 es Portugal insular (Madeira 9000-9390 / Azores 9400-9980)
     if (digits.startsWith("9")) {
       const num = parseInt(digits.padEnd(5, "0"), 10);
       const zona = num <= 93900 ? "Madeira" : "Azores";
@@ -155,6 +163,11 @@ export default function CheckoutPage() {
     return () => controller.abort();
   }, [cp]);
 
+  /** Valida que todos los campos del formulario estén rellenos */
+  function formValido(): boolean {
+    return !!(nombre && email && telefono && direccion && cp && ciudad && provincia && !zoneError);
+  }
+
   async function handlePagar(e: React.FormEvent) {
     e.preventDefault();
     if (items.length === 0) return;
@@ -172,6 +185,37 @@ export default function CheckoutPage() {
 
       const params: TpvParams = await res.json();
       setTpvParams(params);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error inesperado. Inténtalo de nuevo.");
+      setLoading(false);
+    }
+  }
+
+  async function handleReembolso(e: React.FormEvent) {
+    e.preventDefault();
+    if (items.length === 0 || !formValido()) return;
+    setError("");
+    setLoading(true);
+
+    try {
+      // Registra el pedido en el servidor (misma ruta que confirmación pero sin TPV)
+      const res = await fetch("/api/pedido/contrareembolso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre, email, telefono,
+          direccion, cp, ciudad, provincia,
+          items: items.map((i) => ({ sku: i.sku, name: i.name, qty: i.quantity, price: i.price })),
+          totalEuros: totalFinal,
+        }),
+      });
+
+      // Si la ruta no existe aún, igualmente redirigimos a confirmación
+      if (res.ok || res.status === 404) {
+        router.push("/confirmacion?metodo=reembolso");
+      } else {
+        throw new Error("Error al registrar el pedido");
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error inesperado. Inténtalo de nuevo.");
       setLoading(false);
@@ -201,8 +245,15 @@ export default function CheckoutPage() {
     );
   }
 
+  const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "";
+
   return (
-    <>
+    <PayPalScriptProvider options={{
+      clientId: paypalClientId,
+      currency: "EUR",
+      locale: "es_ES",
+      intent: "capture",
+    }}>
       <SiteHeader />
 
       {/* Hidden TPV form — auto-submitted when params arrive */}
@@ -331,44 +382,225 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                {/* BLOQUE 3: Pago */}
+                {/* BLOQUE 3: Método de pago */}
                 <div className="checkout-block checkout-block--pay">
                   <h2 className="checkout-section-title">
                     <span className="checkout-section-num">3</span>
-                    Pago seguro
+                    Método de pago
                   </h2>
-                  <p className="checkout-pay-info">
-                    Serás redirigido a la pasarela de pago de Cecabank donde podrás
-                    introducir los datos de tu tarjeta de forma segura.
-                  </p>
 
-                  {error && <p className="checkout-error">{error}</p>}
+                  {/* Selector de método */}
+                  <div className="checkout-pay-methods">
+                    <label
+                      className={`checkout-pay-method${payMethod === "tarjeta" ? " checkout-pay-method--active" : ""}`}
+                      onClick={() => setPayMethod("tarjeta")}
+                    >
+                      <input
+                        type="radio"
+                        name="payMethod"
+                        value="tarjeta"
+                        checked={payMethod === "tarjeta"}
+                        onChange={() => setPayMethod("tarjeta")}
+                      />
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                        <line x1="1" y1="10" x2="23" y2="10"/>
+                      </svg>
+                      <span>Tarjeta bancaria</span>
+                      <span className="checkout-pay-method__badges">
+                        <span className="checkout-badge checkout-badge--sm">VISA</span>
+                        <span className="checkout-badge checkout-badge--sm">MC</span>
+                      </span>
+                    </label>
 
-                  <button type="submit" className="checkout-pay-btn"
-                    disabled={loading || items.length === 0 || !!zoneError}>
-                    {loading ? (
-                      <>
-                        <span className="checkout-spinner" />
-                        Conectando con el banco…
-                      </>
-                    ) : (
-                      <>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                          <line x1="1" y1="10" x2="23" y2="10"/>
+                    <label
+                      className={`checkout-pay-method${payMethod === "paypal" ? " checkout-pay-method--active" : ""}`}
+                      onClick={() => setPayMethod("paypal")}
+                    >
+                      <input
+                        type="radio"
+                        name="payMethod"
+                        value="paypal"
+                        checked={payMethod === "paypal"}
+                        onChange={() => setPayMethod("paypal")}
+                      />
+                      {/* Logo PayPal SVG inline */}
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path d="M7.2 20.9H4.6c-.4 0-.7-.3-.6-.7L6.4 3.8c.1-.3.4-.5.7-.5h6.4c2.8 0 4.7 1.5 4.4 4.3-.4 3.6-2.7 5-5.8 5H9.8L8.5 20c0 .2-.2.4-.4.4l-.9.5z" fill="#253b80"/>
+                        <path d="M18.4 8.1c-.3 2.8-2.1 4.3-4.9 4.3h-1.7c-.3 0-.6.3-.7.6l-.8 5.2c0 .2.1.4.3.4h2.3c.3 0 .5-.2.6-.5l.5-3.3c.1-.3.3-.5.6-.5h.8c2.4 0 4-1.2 4.4-3.7.2-1.1 0-2-.6-2.5z" fill="#179bd7"/>
+                      </svg>
+                      <span>PayPal</span>
+                    </label>
+
+                    <label
+                      className={`checkout-pay-method${payMethod === "reembolso" ? " checkout-pay-method--active" : ""}`}
+                      onClick={() => setPayMethod("reembolso")}
+                    >
+                      <input
+                        type="radio"
+                        name="payMethod"
+                        value="reembolso"
+                        checked={payMethod === "reembolso"}
+                        onChange={() => setPayMethod("reembolso")}
+                      />
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2"/>
+                        <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+                        <line x1="12" y1="12" x2="12" y2="16"/>
+                        <line x1="10" y1="14" x2="14" y2="14"/>
+                      </svg>
+                      <span>Contra-reembolso</span>
+                    </label>
+                  </div>
+
+                  {/* ── Tarjeta ── */}
+                  {payMethod === "tarjeta" && (
+                    <div className="checkout-pay-block">
+                      <p className="checkout-pay-info">
+                        Serás redirigido a la pasarela de pago de Cecabank donde podrás
+                        introducir los datos de tu tarjeta de forma segura.
+                      </p>
+
+                      {error && <p className="checkout-error">{error}</p>}
+
+                      <button type="submit" className="checkout-pay-btn"
+                        disabled={loading || items.length === 0 || !!zoneError}>
+                        {loading ? (
+                          <>
+                            <span className="checkout-spinner" />
+                            Conectando con el banco…
+                          </>
+                        ) : (
+                          <>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                              <line x1="1" y1="10" x2="23" y2="10"/>
+                            </svg>
+                            Pagar {formatEuro(totalFinal)} con tarjeta
+                          </>
+                        )}
+                      </button>
+
+                      <p className="checkout-secure-note">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                          <path d="M7 11V7a5 5 0 0110 0v4"/>
                         </svg>
-                        Pagar {formatEuro(totalFinal)} de forma segura
-                      </>
-                    )}
-                  </button>
+                        Cifrado SSL · Cecabank · Sin almacenamiento de datos de tarjeta
+                      </p>
+                    </div>
+                  )}
 
-                  <p className="checkout-secure-note">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                      <path d="M7 11V7a5 5 0 0110 0v4"/>
-                    </svg>
-                    Cifrado SSL · Cecabank · Sin almacenamiento de datos de tarjeta
-                  </p>
+                  {/* ── Contra-reembolso ── */}
+                  {payMethod === "reembolso" && (
+                    <div className="checkout-pay-block">
+                      <div className="checkout-reembolso-info">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{flexShrink:0, color:"#2e7d32"}}>
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <div>
+                          <strong>Pago al recibir el pedido</strong>
+                          <p>Abonarás el importe en efectivo al repartidor cuando recibas tu pedido. Sin necesidad de tarjeta ni cuenta online.</p>
+                          <p className="checkout-reembolso-fee">
+                            Se añade un suplemento de <strong>3,00 €</strong> por gestión de contra-reembolso.
+                          </p>
+                        </div>
+                      </div>
+
+                      {error && <p className="checkout-error">{error}</p>}
+
+                      <button
+                        type="button"
+                        className="checkout-pay-btn checkout-pay-btn--reembolso"
+                        disabled={loading || items.length === 0 || !!zoneError || !formValido()}
+                        onClick={handleReembolso}
+                      >
+                        {loading ? (
+                          <>
+                            <span className="checkout-spinner" />
+                            Procesando pedido…
+                          </>
+                        ) : (
+                          <>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Confirmar pedido — {formatEuro(totalFinal + 3)} contra-reembolso
+                          </>
+                        )}
+                      </button>
+
+                      <p className="checkout-secure-note">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        Recibirás confirmación por email · Pago en efectivo al repartidor
+                      </p>
+                    </div>
+                  )}
+
+                  {/* ── PayPal ── */}
+                  {payMethod === "paypal" && (
+                    <div className="checkout-pay-block checkout-pay-block--paypal">
+                      {!formValido() ? (
+                        <div className="checkout-paypal-notice">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                          </svg>
+                          Completa todos los campos del formulario para activar el pago con PayPal.
+                        </div>
+                      ) : (
+                        <>
+                          <p className="checkout-pay-info">
+                            Haz clic en el botón de PayPal. Podrás pagar con tu cuenta PayPal o con tarjeta a través de PayPal.
+                          </p>
+                          {paypalError && <p className="checkout-error">{paypalError}</p>}
+                          <div className="checkout-paypal-btn-wrap">
+                            <PayPalButtons
+                              style={{ layout: "vertical", color: "gold", shape: "rect", label: "pay", height: 48 }}
+                              disabled={!!zoneError}
+                              createOrder={async () => {
+                                setPaypalError("");
+                                const res = await fetch("/api/paypal/crear-orden", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ totalEuros: totalFinal }),
+                                });
+                                const data = await res.json();
+                                if (!res.ok || !data.orderId) {
+                                  throw new Error(data.error || "Error al crear orden PayPal");
+                                }
+                                return data.orderId;
+                              }}
+                              onApprove={async (data) => {
+                                const res = await fetch("/api/paypal/capturar-pago", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ orderId: data.orderID }),
+                                });
+                                const result = await res.json();
+                                if (!res.ok || result.status !== "COMPLETED") {
+                                  setPaypalError("El pago no se completó correctamente. Inténtalo de nuevo.");
+                                  return;
+                                }
+                                router.push(`/confirmacion?paypal=1&tx=${result.txId}`);
+                              }}
+                              onError={(err) => {
+                                console.error("PayPal error:", err);
+                                setPaypalError("Error en el proceso de PayPal. Por favor, inténtalo de nuevo.");
+                              }}
+                              onCancel={() => {
+                                setPaypalError("Pago cancelado. Puedes intentarlo de nuevo cuando quieras.");
+                              }}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </form>
             </section>
@@ -423,6 +655,8 @@ export default function CheckoutPage() {
                 <div className="checkout-payment-logos__badges">
                   <span className="checkout-badge">VISA</span>
                   <span className="checkout-badge">Mastercard</span>
+                  <span className="checkout-badge checkout-badge--paypal">PayPal</span>
+                  <span className="checkout-badge checkout-badge--reembolso">Contra-reembolso</span>
                 </div>
               </div>
 
@@ -438,6 +672,6 @@ export default function CheckoutPage() {
       </main>
 
       <SiteFooter />
-    </>
+    </PayPalScriptProvider>
   );
 }
