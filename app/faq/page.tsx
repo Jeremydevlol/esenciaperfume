@@ -28,7 +28,7 @@ const SECTIONS = [
     faqs: [
       {
         q: "¿Los perfumes son 100% originales?",
-        a: "Sí, todos nuestros productos son 100% originales y auténticos. Trabajamos directamente con distribuidores oficiales y marcas reconocidas. Nunca vendemos imitaciones ni falsificaciones. Ten en cuenta que las fotografías de todos los productos son ilustrativas y Esencia Perfumes no se hace responsable de que el producto sea exactamente igual si el fabricante cambia el formato.",
+        a: "Sí, todos nuestros productos son 100% originales y auténticos. Trabajamos directamente con distribuidores oficiales y marcas reconocidas. Nunca vendemos imitaciones ni falsificaciones. Ten en cuenta que las fotografías de todos los productos son ilustrativas y Secreto Digital no se hace responsable de que el producto sea exactamente igual si el fabricante cambia el formato.",
       },
       {
         q: "¿Qué diferencia hay entre los productos «REGULAR» y los productos «@»?",
@@ -36,7 +36,7 @@ const SECTIONS = [
       },
       {
         q: "¿Tenéis productos que no aparecen en la web?",
-        a: "Sí, existen productos que no están incluidos en nuestra página, algunos incluso ya descatalogados. Sin embargo, Esencia Perfumes hace todo lo posible por ponerlos a tu alcance a través de nuestra extensa red de proveedores. Puedes realizar la consulta — estaremos encantados de atenderte.",
+        a: "Sí, existen productos que no están incluidos en nuestra página, algunos incluso ya descatalogados. Sin embargo, Secreto Digital hace todo lo posible por ponerlos a tu alcance a través de nuestra extensa red de proveedores. Puedes realizar la consulta — estaremos encantados de atenderte.",
       },
     ],
   },
@@ -57,7 +57,7 @@ const SECTIONS = [
       },
       {
         q: "¿Qué pasa si no recojo un pedido contra reembolso?",
-        a: "Al comprar en Esencia Perfumes te comprometes a aceptar los pedidos realizados. No recoger un pedido contra reembolso es un incumplimiento contractual con consecuencias legales. Por favor, solo escoge esta modalidad si estás seguro de que lo vas a recoger.",
+        a: "Al comprar en Secreto Digital te comprometes a aceptar los pedidos realizados. No recoger un pedido contra reembolso es un incumplimiento contractual con consecuencias legales. Por favor, solo escoge esta modalidad si estás seguro de que lo vas a recoger.",
       },
     ],
   },

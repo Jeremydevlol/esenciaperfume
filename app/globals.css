@@ -176,16 +176,16 @@ img { max-width: 100%; height: auto; }
   line-height: 0;
 }
 .pf-logo__img {
-  height: 72px;
+  height: 88px;
   width: auto;
   object-fit: contain;
   display: block;
 }
 @media (max-width: 768px) {
-  .pf-logo__img { height: 58px; }
+  .pf-logo__img { height: 70px; }
 }
 @media (max-width: 480px) {
-  .pf-logo__img { height: 48px; }
+  .pf-logo__img { height: 58px; }
 }
 
 /* RIGHT group */
@@ -3137,4 +3137,14 @@ img { max-width: 100%; height: auto; }
   color: #7a4f00;
   line-height: 1.5;
   margin-top: 12px;
+}
+
+/* Logo en página de confirmación de compra */
+.tpv-result-page__logo {
+  margin-bottom: 24px;
+}
+.tpv-result-page__logo img {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
 }

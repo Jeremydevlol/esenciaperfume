@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const base = siteUrl().origin;
   return {
     title: seoTitleSegment(p.nombre, 50),
-    description: `Compra ${p.nombre} de ${p.marca}${p.ml ? ` (${p.ml})` : ""} al mejor precio. ${p.descripcion ? p.descripcion.slice(0, 80) + "…" : "Envío rápido y devolución gratuita en esenciaperfume.com."}`,
+    description: `Compra ${p.nombre} de ${p.marca}${p.ml ? ` (${p.ml})` : ""} al mejor precio. ${p.descripcion ? p.descripcion.slice(0, 80) + "…" : "Envío rápido y devolución gratuita en secretodigital.com."}`,
     alternates: { canonical: `${base}/product/${encodeURIComponent(p.sku)}` },
     openGraph: {
       title: `${p.nombre} — ${p.marca}`,
@@ -64,7 +64,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       priceCurrency: "EUR",
       availability: "https://schema.org/InStock",
       priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      seller: { "@type": "Organization", name: "Esencia Perfumes" },
+      seller: { "@type": "Organization", name: "Secreto Digital" },
     },
   };
 

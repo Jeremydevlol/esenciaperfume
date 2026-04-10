@@ -40,7 +40,7 @@ export default function HomePage() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     url: base,
-    name: "Esencia Perfumes",
+    name: "Secreto Digital",
     description: SITE_DEFAULT_DESCRIPTION,
     potentialAction: {
       "@type": "SearchAction",

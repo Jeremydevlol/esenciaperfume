@@ -1,14 +1,14 @@
 /** Marca y SEO global (sin datos de contacto en metadatos). */
 
-export const SITE_BRAND = "esenciaperfume.com";
+export const SITE_BRAND = "secretodigital.com";
 export const SITE_NAME = "Esenciaperfume";
 
 /** ~50 caracteres: keyword + marca (tilde en «más»). */
 export const SITE_DEFAULT_TITLE =
-  "Perfumes más baratos | esenciaperfume.com";
+  "Perfumes más baratos | secretodigital.com";
 
 export const SITE_DEFAULT_DESCRIPTION =
-  "Perfumes y cosmética al mejor precio online. Primeras marcas, envíos rápidos y ofertas. Compra con confianza en esenciaperfume.com.";
+  "Perfumes y cosmética al mejor precio online. Primeras marcas, envíos rápidos y ofertas. Compra con confianza en secretodigital.com.";
 
 /** Quita sufijos de plantilla (Glowify / tema). */
 export function cleanTemplateTitle(raw: string): string {
@@ -18,7 +18,7 @@ export function cleanTemplateTitle(raw: string): string {
     .trim();
 }
 
-/** Segmento de &lt;title&gt; para `metadata.title` (el layout añade ` | esenciaperfume.com`). */
+/** Segmento de &lt;title&gt; para `metadata.title` (el layout añade ` | secretodigital.com`). */
 export function seoTitleSegment(raw: string, maxLen = 48): string {
   const t = cleanTemplateTitle(raw);
   if (!t) return SITE_NAME;
@@ -28,7 +28,7 @@ export function seoTitleSegment(raw: string, maxLen = 48): string {
 
 export function siteUrl(): URL {
   return new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.esenciaperfume.com",
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.secretodigital.com",
   );
 }
 

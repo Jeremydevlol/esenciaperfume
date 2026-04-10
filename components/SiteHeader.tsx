@@ -165,11 +165,11 @@ export function SiteHeader() {
           </div>
 
           {/* CENTER: logo */}
-          <Link href="/" className="pf-logo" aria-label="Esencia Perfumes — Inicio">
+          <Link href="/" className="pf-logo" aria-label="Secreto Digital — Inicio">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/assets/images/logo-main.png"
-              alt="Esencia Perfumes"
+              src="/assets/images/logosecreto.png"
+              alt="Secreto Digital"
               className="pf-logo__img"
             />
           </Link>

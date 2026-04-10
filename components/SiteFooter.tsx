@@ -8,8 +8,8 @@ export function SiteFooter() {
         <div className="container">
           <div className="text-center">
             <img
-              src="/assets/images/logo-main.png"
-              alt="Esencia Perfumes"
+              src="/assets/images/logosecreto.png"
+              alt="Secreto Digital"
               style={{ height: 140, width: "auto", objectFit: "contain", display: "inline-block" }}
             />
           </div>
@@ -28,7 +28,7 @@ export function SiteFooter() {
                         <path d="M17.2324 13.9201C16.0242 12.8867 14.798 12.2608 13.6047 13.2926L12.8921 13.9162C12.3707 14.3689 11.4014 16.484 7.65346 12.1726C3.90634 7.86665 6.1362 7.19621 6.65834 6.74743L7.37483 6.12304C8.56195 5.08889 8.11395 3.78704 7.25776 2.44694L6.74107 1.63524C5.88098 0.29826 4.94439-0.579789 3.75415 0.452797L3.11102 1.01475C2.58498 1.39797 1.11454 2.64363 0.757853 5.01007C0.328585 7.84948 1.68273 11.101 4.78517 14.6686C7.88371 18.2378 10.9175 20.0306 13.7912 19.9993C16.1795 19.9736 17.6219 18.692 18.073 18.2261L18.7184 17.6633C19.9056 16.6315 19.168 15.581 17.959 14.5453L17.2324 13.9201Z" fill="currentColor"/>
                       </svg>
                     </i>
-                    <span className="cs_light">esenciaperfume.com</span>
+                    <span className="cs_light">secretodigital.com</span>
                   </li>
                   <li>
                     <i>
@@ -39,7 +39,7 @@ export function SiteFooter() {
                         <path fillRule="evenodd" clipRule="evenodd" d="M1.8044 0.7748L8.568 7.2844C8.8096 7.5156 9.1904 7.5156 9.432 7.2844C10.9856 5.7982 14.8192 2.1044 16.1956 0.7776C16.0904 0.7594 15.9832 0.75 15.875 0.75H2.1076C2.0054 0.75 1.904 0.7584 1.8044 0.7748Z" fill="currentColor"/>
                       </svg>
                     </i>
-                    <span className="cs_light">info@esenciaperfume.com</span>
+                    <span className="cs_light">info@secretodigital.com</span>
                   </li>
                   <li>
                     <i>

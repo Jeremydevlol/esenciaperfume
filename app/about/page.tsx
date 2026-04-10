@@ -15,7 +15,7 @@ const VALUES = [
 ];
 
 const MILESTONES = [
-  { year: "2018", title: "Inicio", desc: "Fundamos Esencia Perfume con la misión de ofrecer perfumes originales al mejor precio." },
+  { year: "2018", title: "Inicio", desc: "Fundamos Secreto Digital con la misión de ofrecer perfumes originales al mejor precio." },
   { year: "2020", title: "Expansión", desc: "Ampliamos nuestro catálogo a más de 5.000 referencias de las mejores marcas." },
   { year: "2022", title: "Lanzamiento digital", desc: "Nueva plataforma online con experiencia de compra mejorada y envíos más rápidos." },
   { year: "2024", title: "Miles de clientes", desc: "Más de 50.000 clientes satisfechos en toda España y Europa." },
@@ -51,7 +51,7 @@ export default function AboutPage() {
               <div className="col-lg-6">
                 <img
                   src="/assets/images/about_img_1.jpeg"
-                  alt="Sobre Esencia Perfume"
+                  alt="Sobre Secreto Digital"
                   className="w-100 cs_radius_16"
                 />
               </div>
@@ -66,7 +66,7 @@ export default function AboutPage() {
                   recibirlos en tu casa en 24-48 horas.
                 </p>
                 <p className="cs_light cs_fs_18 mb-4">
-                  En Esencia Perfume encontrarás más de 10.000 referencias de perfumes para
+                  En Secreto Digital encontrarás más de 10.000 referencias de perfumes para
                   mujer, hombre y unisex, además de cosméticos y sets de regalo. Trabajamos
                   directamente con distribuidores oficiales para garantizar la autenticidad de
                   cada producto.

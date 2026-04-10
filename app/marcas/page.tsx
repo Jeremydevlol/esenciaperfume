@@ -9,8 +9,8 @@ import { MarcasGrid } from "@/components/MarcasGrid";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Todas las Marcas | Esencia Perfumes",
-  description: `Explora todas las marcas de perfumería disponibles en Esencia Perfumes. ${SITE_DEFAULT_DESCRIPTION}`,
+  title: "Todas las Marcas | Secreto Digital",
+  description: `Explora todas las marcas de perfumería disponibles en Secreto Digital. ${SITE_DEFAULT_DESCRIPTION}`,
   alternates: { canonical: `${siteUrl().origin}/marcas` },
 };
 

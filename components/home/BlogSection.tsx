@@ -56,7 +56,7 @@ export function BlogSection() {
                       <i className="fa-solid fa-clock"></i> {post.date}
                     </span>
                     <span>
-                      <i className="fa-solid fa-circle-user"></i> Esencia Perfume
+                      <i className="fa-solid fa-circle-user"></i> Secreto Digital
                     </span>
                   </div>
                 </div>

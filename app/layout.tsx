@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   metadataBase: siteUrl(),
   title: {
     default: SITE_DEFAULT_TITLE,
-    template: "%s | Esencia Perfumes",
+    template: "%s | Secreto Digital",
   },
   description: SITE_DEFAULT_DESCRIPTION,
   icons: {
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: SITE_DEFAULT_TITLE,
     description: SITE_DEFAULT_DESCRIPTION,
-    siteName: "Esencia Perfumes",
+    siteName: "Secreto Digital",
     locale: "es_ES",
     type: "website",
   },

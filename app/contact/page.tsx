@@ -80,15 +80,15 @@ export default function ContactPage() {
                       <img src="/assets/images/icons/contact_icon_1.svg" alt="" style={{ marginTop: 4 }} />
                       <div>
                         <b className="d-block cs_fs_16">Tienda Online</b>
-                        <span>www.esenciaperfume.com</span>
+                        <span>www.secretodigital.com</span>
                       </div>
                     </li>
                     <li className="d-flex align-items-start gap-3 mb-4">
                       <img src="/assets/images/icons/contact_icon_2.svg" alt="" style={{ marginTop: 4 }} />
                       <div>
                         <b className="d-block cs_fs_16">Email</b>
-                        <a href="mailto:info@esenciaperfume.com" className="cs_white_color">
-                          info@esenciaperfume.com
+                        <a href="mailto:info@secretodigital.com" className="cs_white_color">
+                          info@secretodigital.com
                         </a>
                       </div>
                     </li>

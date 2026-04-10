@@ -19,6 +19,12 @@ export default function PagoOkPage() {
       <SiteHeader />
       <main className="tpv-result-page">
         <div className="tpv-result-page__card tpv-result-page__card--ok">
+          {/* Logo */}
+          <div className="tpv-result-page__logo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/assets/images/logosecreto.png" alt="Secreto Digital" />
+          </div>
+
           <div className="tpv-result-page__icon">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
