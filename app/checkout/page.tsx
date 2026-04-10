@@ -23,6 +23,20 @@ const PROVINCIAS = [
   "Valencia","Valladolid","Vizcaya","Zamora","Zaragoza","Ceuta","Melilla",
 ];
 
+/** Primeros 2 dígitos del CP → provincia española */
+const CP_PROVINCIA: Record<string, string> = {
+  "01":"Álava","02":"Albacete","03":"Alicante","04":"Almería","05":"Ávila",
+  "06":"Badajoz","07":"Baleares","08":"Barcelona","09":"Burgos","10":"Cáceres",
+  "11":"Cádiz","12":"Castellón","13":"Ciudad Real","14":"Córdoba","15":"La Coruña",
+  "16":"Cuenca","17":"Gerona","18":"Granada","19":"Guadalajara","20":"Guipúzcoa",
+  "21":"Huelva","22":"Huesca","23":"Jaén","24":"León","25":"Lérida","26":"La Rioja",
+  "27":"Lugo","28":"Madrid","29":"Málaga","30":"Murcia","31":"Navarra","32":"Orense",
+  "33":"Asturias","34":"Palencia","35":"Las Palmas","36":"Pontevedra","37":"Salamanca",
+  "38":"Santa Cruz de Tenerife","39":"Cantabria","40":"Segovia","41":"Sevilla",
+  "42":"Soria","43":"Tarragona","44":"Teruel","45":"Toledo","46":"Valencia",
+  "47":"Valladolid","48":"Vizcaya","49":"Zamora","50":"Zaragoza","51":"Ceuta","52":"Melilla",
+};
+
 type TpvParams = {
   endpoint: string;
   MerchantID: string;
@@ -55,9 +69,11 @@ export default function CheckoutPage() {
   const [ciudad,    setCiudad]    = useState("");
   const [provincia, setProvincia] = useState("");
 
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState("");
-  const [tpvParams, setTpvParams] = useState<TpvParams | null>(null);
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState("");
+  const [tpvParams,   setTpvParams]   = useState<TpvParams | null>(null);
+  const [cpLooking,   setCpLooking]   = useState(false);   // spinner mientras busca
+  const [cpError,     setCpError]     = useState("");       // CP no encontrado
 
   const envio      = totalPrice >= ENVIO_GRATIS_DESDE ? 0 : ENVIO;
   const totalFinal = totalPrice + envio;
@@ -68,6 +84,40 @@ export default function CheckoutPage() {
       formRef.current.submit();
     }
   }, [tpvParams]);
+
+  // Auto-relleno ciudad y provincia al introducir CP (5 dígitos)
+  useEffect(() => {
+    const digits = cp.replace(/\D/g, "");
+    if (digits.length !== 5) { setCpError(""); return; }
+
+    // Provincia instantánea por prefijo
+    const prefix = digits.slice(0, 2);
+    const prov = CP_PROVINCIA[prefix];
+    if (prov) setProvincia(prov);
+
+    // Ciudad desde API zippopotam.us (gratuita, sin clave)
+    const controller = new AbortController();
+    setCpLooking(true);
+    setCpError("");
+
+    fetch(`https://api.zippopotam.us/es/${digits}`, { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error("not found");
+        return r.json();
+      })
+      .then((data) => {
+        const place = data?.places?.[0]?.["place name"];
+        if (place) setCiudad(place);
+        else setCpError("CP no encontrado — introduce la ciudad manualmente");
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError")
+          setCpError("No se pudo obtener la ciudad — introdúcela manualmente");
+      })
+      .finally(() => setCpLooking(false));
+
+    return () => controller.abort();
+  }, [cp]);
 
   async function handlePagar(e: React.FormEvent) {
     e.preventDefault();
@@ -196,15 +246,19 @@ export default function CheckoutPage() {
                     <div className="checkout-field">
                       <label htmlFor="cp">Código postal *</label>
                       <input id="cp" type="text" required pattern="[0-9]{5}"
-                        maxLength={5}
-                        value={cp} onChange={(e) => setCp(e.target.value)}
+                        maxLength={5} inputMode="numeric"
+                        value={cp} onChange={(e) => setCp(e.target.value.replace(/\D/g, ""))}
                         placeholder="28001" />
                     </div>
                     <div className="checkout-field checkout-field--grow">
-                      <label htmlFor="ciudad">Ciudad / Municipio *</label>
+                      <label htmlFor="ciudad">
+                        Ciudad / Municipio *
+                        {cpLooking && <span className="checkout-cp-spinner" aria-label="Buscando…" />}
+                      </label>
                       <input id="ciudad" type="text" required
                         value={ciudad} onChange={(e) => setCiudad(e.target.value)}
-                        placeholder="Ej: Madrid" />
+                        placeholder={cpLooking ? "Buscando…" : "Ej: Madrid"} />
+                      {cpError && <p className="checkout-cp-error">{cpError}</p>}
                     </div>
                   </div>
                   <div className="checkout-field">
