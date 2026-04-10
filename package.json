@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "env -u npm_config_devdir next dev --webpack -H 0.0.0.0",
+    "dev:turbo": "env -u npm_config_devdir next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prepare:edp-images": "node scripts/prepare-edp-images.mjs",
+    "download:perfumedigital-images": "node scripts/download-perfumedigital-images.mjs"
   },
   "dependencies": {
+    "@next/swc-wasm-nodejs": "^16.2.3",
     "next": "16.2.2",
     "react": "19.2.4",
     "react-dom": "19.2.4"

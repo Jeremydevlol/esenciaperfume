@@ -36,6 +36,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Imágenes locales de productos (no se usan en producción, vienen de URLs externas)
+/public/assets/images/druni/
+/public/assets/images/edp/
+/perfumedigital_productos/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

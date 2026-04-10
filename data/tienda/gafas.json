@@ -1,0 +1,151 @@
+{
+  "categoria": {
+    "slug": "gafas",
+    "label": "Gafas de Sol"
+  },
+  "productos": [
+    {
+      "sku": "18137",
+      "nombre": "MATTEL DISNEY ALADÍN LILAS (NIÑOS) (ligeramente dañada)",
+      "marca": "MATTEL",
+      "categoria": "gafas",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 4.99,
+      "pvp": 39.0,
+      "descuento": 87,
+      "imagen": "https://perfumedigital.es/catalog/barbie18.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=18137"
+    },
+    {
+      "sku": "18126",
+      "nombre": "MATTEL BRATZ 2703C FILT. CAT.3  (NIÑOS) (ligeramente dañada)",
+      "marca": "MATTEL",
+      "categoria": "gafas",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 4.99,
+      "pvp": 39.0,
+      "descuento": 87,
+      "imagen": "https://perfumedigital.es/catalog/barbie12.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=18126"
+    },
+    {
+      "sku": "18125",
+      "nombre": "MATTEL DISNEY 3/78 - 2168 (NIÑOS) (ligeramente dañada)",
+      "marca": "MATTEL",
+      "categoria": "gafas",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 4.99,
+      "pvp": 39.0,
+      "descuento": 87,
+      "imagen": "https://perfumedigital.es/catalog/barbie9.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=18125"
+    },
+    {
+      "sku": "18121",
+      "nombre": "MATTEL ACTION MAN SAM40 1023 (NIÑOS) (ligeramente dañada)",
+      "marca": "MATTEL",
+      "categoria": "gafas",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 4.99,
+      "pvp": 39.0,
+      "descuento": 87,
+      "imagen": "https://perfumedigital.es/catalog/barbie10.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=18121"
+    },
+    {
+      "sku": "18118",
+      "nombre": "MATTEL BRATZ Z801D FILT. CAT.3  (NIÑOS) (ligeramente dañada)",
+      "marca": "MATTEL",
+      "categoria": "gafas",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 4.99,
+      "pvp": 39.0,
+      "descuento": 87,
+      "imagen": "https://perfumedigital.es/catalog/barbie8.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=18118"
+    },
+    {
+      "sku": "18108",
+      "nombre": "MATTEL ACTION MAN SAM23 1508 (NIÑOS) (ligeramente dañada)",
+      "marca": "MATTEL",
+      "categoria": "gafas",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 4.99,
+      "pvp": 39.0,
+      "descuento": 87,
+      "imagen": "https://perfumedigital.es/catalog/barbie5.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=18108"
+    },
+    {
+      "sku": "18104",
+      "nombre": "MATTEL ACTION MAN SAM23 1507 (NIÑOS) (ligeramente dañada)",
+      "marca": "MATTEL",
+      "categoria": "gafas",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 4.99,
+      "pvp": 39.0,
+      "descuento": 87,
+      "imagen": "https://perfumedigital.es/catalog/barbie3.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=18104"
+    },
+    {
+      "sku": "18103",
+      "nombre": "MATTEL BARBIE SB/122 120 (NIÑOS) (ligeramente dañada)",
+      "marca": "MATTEL",
+      "categoria": "gafas",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 4.99,
+      "pvp": 39.0,
+      "descuento": 87,
+      "imagen": "https://perfumedigital.es/catalog/barbie2.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=18103"
+    },
+    {
+      "sku": "18102",
+      "nombre": "JULBO 004 (NIÑOS)",
+      "marca": "JULBO",
+      "categoria": "gafas",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 4.99,
+      "pvp": 75.0,
+      "descuento": 93,
+      "imagen": "https://perfumedigital.es/catalog/julbo4.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=18102"
+    },
+    {
+      "sku": "18101",
+      "nombre": "JULBO 003 (NIÑOS) (ligeramente dañada)",
+      "marca": "JULBO",
+      "categoria": "gafas",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 4.99,
+      "pvp": 75.0,
+      "descuento": 93,
+      "imagen": "https://perfumedigital.es/catalog/julbo3.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=18101"
+    },
+    {
+      "sku": "17825",
+      "nombre": "MATTEL BARBIE SB/35 - 997 (NIÑOS) (ligeramente dañada)",
+      "marca": "MATTEL",
+      "categoria": "gafas",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 4.99,
+      "pvp": 39.0,
+      "descuento": 87,
+      "imagen": "https://perfumedigital.es/catalog/barbie1.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=17825"
+    }
+  ]
+}

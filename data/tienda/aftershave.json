@@ -1,0 +1,99 @@
+{
+  "categoria": {
+    "slug": "aftershave",
+    "label": "After Shave & Body"
+  },
+  "productos": [
+    {
+      "sku": "38704",
+      "nombre": "ACQUA DI PARMA COLONIA DEO SPRAY 150 ML",
+      "marca": "ACQUA DI PARMA",
+      "categoria": "aftershave",
+      "tipo": "Regular",
+      "ml": "150 ML",
+      "precio": 39.99,
+      "pvp": 69.0,
+      "descuento": 42,
+      "imagen": "https://perfumedigital.es/catalog/deoacquaparm31.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=38704"
+    },
+    {
+      "sku": "37655",
+      "nombre": "CLINIQUE FOR MEN ALOE SHAVE GEL 125 ML",
+      "marca": "Clinique",
+      "categoria": "aftershave",
+      "tipo": "Regular",
+      "ml": "125 ML",
+      "precio": 14.99,
+      "pvp": 46.0,
+      "descuento": 67,
+      "imagen": "https://perfumedigital.es/catalog/cliniemnaloere21.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=37655"
+    },
+    {
+      "sku": "37653",
+      "nombre": "CLINIQUE ANTIPERSPIR DEO ROLL ON 75 ML",
+      "marca": "Clinique",
+      "categoria": "aftershave",
+      "tipo": "Regular",
+      "ml": "75 ML",
+      "precio": 17.99,
+      "pvp": 51.0,
+      "descuento": 65,
+      "imagen": "https://perfumedigital.es/catalog/clinieqedo2221.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=37653"
+    },
+    {
+      "sku": "37435",
+      "nombre": "GILLETTE FUSION PROGLIDE ESTUCHE",
+      "marca": "GILLETTE",
+      "categoria": "aftershave",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 16.99,
+      "pvp": 21.0,
+      "descuento": 19,
+      "imagen": "https://perfumedigital.es/catalog/glidepro22131.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=37435"
+    },
+    {
+      "sku": "36773",
+      "nombre": "GREEN CODE FANTASY FLIRT ESTUCHE DEO 150 ML + GEL 150 ML",
+      "marca": "VARIOS",
+      "categoria": "aftershave",
+      "tipo": "Regular",
+      "ml": "150 ML",
+      "precio": 7.99,
+      "pvp": 16.0,
+      "descuento": 50,
+      "imagen": "https://perfumedigital.es/catalog/fantasyflie224.JPG",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=36773"
+    },
+    {
+      "sku": "34802",
+      "nombre": "GAULTIER DIVINE LOCION 200 ML",
+      "marca": "Jean Paul Gaultier",
+      "categoria": "aftershave",
+      "tipo": "Regular",
+      "ml": "200 ML",
+      "precio": 22.99,
+      "pvp": 99.0,
+      "descuento": 77,
+      "imagen": "https://perfumedigital.es/catalog/divinlocs211.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=34802"
+    },
+    {
+      "sku": "33107",
+      "nombre": "HIERBAS DE IBIZA SALES DE BAÑO 350 GRAMOS",
+      "marca": "VARIOS",
+      "categoria": "aftershave",
+      "tipo": "Regular",
+      "ml": "",
+      "precio": 9.99,
+      "pvp": 39.0,
+      "descuento": 74,
+      "imagen": "https://perfumedigital.es/catalog/hierbassa34.jpg",
+      "url_origen": "https://perfumedigital.es/index.php?op=descripcion&id=33107"
+    }
+  ]
+}
