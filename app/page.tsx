@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTiendaProductos, getEnOferta } from "@/lib/tienda-products";
-import { SITE_DEFAULT_TITLE, SITE_DEFAULT_DESCRIPTION } from "@/lib/site-seo";
+import { SITE_DEFAULT_TITLE, SITE_DEFAULT_DESCRIPTION, siteUrl } from "@/lib/site-seo";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HeroSection } from "@/components/home/HeroSection";
@@ -12,6 +12,7 @@ import { ProductCard } from "@/components/ProductCard";
 export const metadata: Metadata = {
   title: { absolute: SITE_DEFAULT_TITLE },
   description: SITE_DEFAULT_DESCRIPTION,
+  alternates: { canonical: siteUrl().origin },
 };
 
 export default function HomePage() {
@@ -32,8 +33,25 @@ export default function HomePage() {
     .filter((p) => !flashSkus.has(p.sku) && !featuredSkus.has(p.sku))
     .slice(0, 8);
 
+  const base = siteUrl().origin;
+
+  // WebSite + SearchAction JSON-LD
+  const webSiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    url: base,
+    name: "Esencia Perfumes",
+    description: SITE_DEFAULT_DESCRIPTION,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: `${base}/shop?q={search_term_string}` },
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }} />
       <SiteHeader />
       <main>
         {/* Hero full-width */}

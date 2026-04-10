@@ -8,6 +8,8 @@ import {
 } from "@/lib/site-seo";
 import { CartProvider } from "@/lib/cart-context";
 import { CartSidebar } from "@/components/CartSidebar";
+import { EntryPopup } from "@/components/EntryPopup";
+import { CartToast } from "@/components/CartToast";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -65,6 +67,8 @@ export default function RootLayout({
         <CartProvider>
           {children}
           <CartSidebar />
+          <CartToast />
+          <EntryPopup />
         </CartProvider>
       </body>
     </html>

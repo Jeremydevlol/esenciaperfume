@@ -102,6 +102,22 @@ export function CartSidebar() {
                   </div>
                   <div className="cart-item__info">
                     <p className="cart-item__name">{item.name}</p>
+                    {item.name.includes("@") && (
+                      <div className="cart-item__at-notice">
+                        <span className="cart-item__at-badge">@ Caja genérica</span>
+                        <p className="cart-item__at-text">
+                          Este producto se entrega en caja blanca o marrón, no en su embalaje original. El contenido es 100% auténtico — solo el envoltorio exterior difiere.
+                        </p>
+                      </div>
+                    )}
+                    {/regular/i.test(item.name) && (
+                      <div className="cart-item__regular-notice">
+                        <span className="cart-item__regular-badge">✓ Producto Regular</span>
+                        <p className="cart-item__regular-text">
+                          Este producto se entrega en su caja y embalaje original de fábrica, tal como lo distribuye la marca.
+                        </p>
+                      </div>
+                    )}
                     <p className="cart-item__price">{formatEuro(item.price)}</p>
                     <div className="cart-item__qty">
                       <button

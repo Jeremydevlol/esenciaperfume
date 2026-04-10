@@ -20,24 +20,33 @@ export function ShopCatalog({ products }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const urlQ    = searchParams.get("q")    ?? "";
-  const urlCat  = searchParams.get("cat")  ?? "";
-  const urlSort = (searchParams.get("sort") ?? "default") as SortKey;
+  const urlQ     = searchParams.get("q")     ?? "";
+  const urlCat   = searchParams.get("cat")   ?? "";
+  const urlMarca = searchParams.get("marca") ?? "";
+  const urlSort  = (searchParams.get("sort") ?? "default") as SortKey;
 
   const [page,   setPage]   = useState(1);
   const [sort,   setSort]   = useState<SortKey>(urlSort);
   const [search, setSearch] = useState(urlQ);
   const [cat,    setCat]    = useState(urlCat);
+  const [marca,  setMarca]  = useState(urlMarca);
 
   useEffect(() => {
     setSearch(urlQ);
     setSort(urlSort);
     setCat(urlCat);
+    setMarca(urlMarca);
     setPage(1);
-  }, [urlQ, urlSort, urlCat]);
+  }, [urlQ, urlSort, urlCat, urlMarca]);
 
   const filtered = useMemo(() => {
     let list = products;
+
+    // Filtro por marca (case-insensitive)
+    if (marca.trim()) {
+      const m = marca.trim().toLowerCase();
+      list = list.filter((p) => p.marca.toLowerCase() === m);
+    }
 
     // Filtro por categoría
     if (cat === "cosmeticos") {
@@ -68,7 +77,7 @@ export function ShopCatalog({ products }: Props) {
         list = [...list].sort((a, b) => (b.descuento ?? 0) - (a.descuento ?? 0)); break;
     }
     return list;
-  }, [products, sort, search, cat]);
+  }, [products, sort, search, cat, marca]);
 
   const totalPages   = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage     = Math.min(page, totalPages);
@@ -119,12 +128,25 @@ export function ShopCatalog({ products }: Props) {
     <>
       {/* Toolbar */}
       <div className="escencia-shop-toolbar">
-        <p className="escencia-shop-toolbar__count">
-          {filtered.length === 0
-            ? "Sin resultados"
-            : `Mostrando ${Math.min((safePage - 1) * PAGE_SIZE + 1, filtered.length)}–${Math.min(safePage * PAGE_SIZE, filtered.length)} de ${filtered.length} productos`}
-          {search.trim() && <span> para &ldquo;<strong>{search}</strong>&rdquo;</span>}
-        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <p className="escencia-shop-toolbar__count" style={{ margin: 0 }}>
+            {filtered.length === 0
+              ? "Sin resultados"
+              : `Mostrando ${Math.min((safePage - 1) * PAGE_SIZE + 1, filtered.length)}–${Math.min(safePage * PAGE_SIZE, filtered.length)} de ${filtered.length} productos`}
+            {search.trim() && <span> para &ldquo;<strong>{search}</strong>&rdquo;</span>}
+          </p>
+          {marca.trim() && (
+            <span className="escencia-shop-marca-badge">
+              {marca.toUpperCase()}
+              <button
+                type="button"
+                onClick={() => { setMarca(""); setPage(1); router.replace("/shop"); }}
+                aria-label="Quitar filtro de marca"
+                style={{ background: "none", border: "none", cursor: "pointer", padding: "0 0 0 4px", lineHeight: 1, color: "inherit" }}
+              >✕</button>
+            </span>
+          )}
+        </div>
         <div className="escencia-shop-toolbar__right">
           <form onSubmit={handleSearchSubmit} className="escencia-shop-search">
             <input

@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTiendaProductos, getBySku } from "@/lib/tienda-products";
-import { SITE_DEFAULT_DESCRIPTION, seoTitleSegment } from "@/lib/site-seo";
+import { SITE_DEFAULT_DESCRIPTION, seoTitleSegment, siteUrl } from "@/lib/site-seo";
 import { ProductDetailImage } from "../product-detail-image";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ProductCard } from "@/components/ProductCard";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { ProductLegend } from "@/components/ProductLegend";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +22,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params;
   const p = getBySku(decodeURIComponent(id));
   if (!p) return { title: "Producto", description: SITE_DEFAULT_DESCRIPTION };
+  const base = siteUrl().origin;
   return {
     title: seoTitleSegment(p.nombre, 50),
-    description: `${p.nombre} — ${p.marca}. ${SITE_DEFAULT_DESCRIPTION.slice(0, 100)}`,
+    description: `Compra ${p.nombre} de ${p.marca}${p.ml ? ` (${p.ml})` : ""} al mejor precio. ${p.descripcion ? p.descripcion.slice(0, 80) + "…" : "Envío rápido y devolución gratuita en esenciaperfume.com."}`,
+    alternates: { canonical: `${base}/product/${encodeURIComponent(p.sku)}` },
+    openGraph: {
+      title: `${p.nombre} — ${p.marca}`,
+      description: `${p.nombre} de ${p.marca} al mejor precio online.`,
+      images: [{ url: p.imagen, alt: p.nombre }],
+    },
   };
 }
 
@@ -33,14 +41,48 @@ export default async function ProductDetailPage({ params }: PageProps) {
   if (!product) notFound();
 
   const showDiscount = product.pvp != null && product.pvp > product.precio;
+  const base = siteUrl().origin;
 
   // Productos relacionados: misma categoría, distinto SKU
   const related = getTiendaProductos()
     .filter((p) => p.categoria === product.categoria && p.sku !== product.sku)
     .slice(0, 4);
 
+  // JSON-LD: Product schema (como druni)
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.nombre,
+    image: product.imagen,
+    description: product.descripcion || `${product.nombre} de ${product.marca}. ${product.ml ? product.ml + ". " : ""}${product.tipo}.`,
+    brand: { "@type": "Brand", name: product.marca },
+    sku: product.sku,
+    offers: {
+      "@type": "Offer",
+      url: `${base}/product/${encodeURIComponent(product.sku)}`,
+      price: product.precio,
+      priceCurrency: "EUR",
+      availability: "https://schema.org/InStock",
+      priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      seller: { "@type": "Organization", name: "Esencia Perfumes" },
+    },
+  };
+
+  // JSON-LD: BreadcrumbList
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Inicio", item: base },
+      { "@type": "ListItem", position: 2, name: "Tienda", item: `${base}/shop` },
+      { "@type": "ListItem", position: 3, name: product.nombre, item: `${base}/product/${encodeURIComponent(product.sku)}` },
+    ],
+  };
+
   return (
     <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <SiteHeader />
       <main>
         {/* ── Breadcrumb ── */}
@@ -125,6 +167,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </div>
 
             <p className="pd-info__ref">Ref. {product.sku}</p>
+
+            {/* Leyenda / información sobre el producto */}
+            <ProductLegend />
           </div>
         </div>
 

@@ -22,6 +22,9 @@ type CartContextType = {
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
+  lastAdded: Omit<CartItem, "quantity"> | null;
+  toastVisible: boolean;
+  dismissToast: () => void;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -34,6 +37,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [lastAdded, setLastAdded] = useState<Omit<CartItem, "quantity"> | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
 
   // Load persisted cart after mount (client-only)
   useEffect(() => {
@@ -69,8 +74,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...prev, { ...newItem, quantity: 1 }];
     });
-    setIsOpen(true);
+    setLastAdded(newItem);
+    setToastVisible(true);
   }, []);
+
+  const dismissToast = useCallback(() => setToastVisible(false), []);
 
   const removeItem = useCallback((sku: string) => {
     setItems((prev) => prev.filter((i) => i.sku !== sku));
@@ -104,6 +112,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         isOpen,
         openCart,
         closeCart,
+        lastAdded,
+        toastVisible,
+        dismissToast,
       }}
     >
       {children}

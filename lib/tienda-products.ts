@@ -52,3 +52,26 @@ export function getMarcas(): string[] {
   const set = new Set(getTiendaProductos().map((p) => p.marca).filter(Boolean));
   return Array.from(set).sort();
 }
+
+/** Devuelve marcas únicas normalizadas (mayúsculas, sin duplicados de casing),
+ *  ordenadas alfabéticamente, con el número de productos de cada una. */
+export function getMarcasNormalizadas(): { marca: string; count: number }[] {
+  const map = new Map<string, number>();
+  for (const p of getTiendaProductos()) {
+    if (!p.marca) continue;
+    const key = p.marca.toUpperCase().trim();
+    // Filtrar nombres con problemas de encoding (contienen Ã)
+    if (key.includes("Ã")) continue;
+    map.set(key, (map.get(key) ?? 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([marca, count]) => ({ marca, count }))
+    .sort((a, b) => a.marca.localeCompare(b.marca, "es"));
+}
+
+/** Top N marcas por número de productos */
+export function getTopMarcas(n = 24): { marca: string; count: number }[] {
+  return getMarcasNormalizadas()
+    .sort((a, b) => b.count - a.count)
+    .slice(0, n);
+}

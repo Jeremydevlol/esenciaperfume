@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
+import TOP_MARCAS from "@/data/top-marcas.json";
 
 const ANNOUNCEMENTS = [
   "🚚 Envío GRATIS en pedidos superiores a 50€",
@@ -52,6 +53,7 @@ export function SiteHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [marcasOpen, setMarcasOpen] = useState(false);
   // Bloquea el overlay 350ms tras abrir el drawer para evitar ghost clicks residuales
   const overlayReadyRef = useRef(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -267,6 +269,52 @@ export function SiteHeader() {
             </form>
 
             <nav>
+              {/* ── Sección MARCAS ── */}
+              <div className="pf-drawer__brands-section">
+                <button
+                  type="button"
+                  className="pf-drawer__brands-toggle"
+                  onTouchEnd={iosTap(() => setMarcasOpen((v) => !v))}
+                  onClick={() => setMarcasOpen((v) => !v)}
+                  aria-expanded={marcasOpen}
+                >
+                  <span>🏷️ Marcas</span>
+                  <svg
+                    className={`pf-drawer__brands-arrow${marcasOpen ? " pf-drawer__brands-arrow--open" : ""}`}
+                    width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                  >
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+
+                {marcasOpen && (
+                  <div className="pf-drawer__brands-body">
+                    <div className="pf-drawer__brands-grid">
+                      {(TOP_MARCAS as { marca: string; count: number }[]).map(({ marca }) => (
+                        <Link
+                          key={marca}
+                          href={`/shop?marca=${encodeURIComponent(marca)}`}
+                          className="pf-drawer__brand-pill"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          {marca}
+                        </Link>
+                      ))}
+                    </div>
+                    <Link
+                      href="/marcas"
+                      className="pf-drawer__brands-all"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Ver todas las marcas →
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              <div className="pf-drawer__divider" />
+
               <ul className="pf-drawer__links">
                 {NAV_LINKS.map((l) => (
                   <li key={l.label}>
