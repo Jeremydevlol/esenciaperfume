@@ -7,7 +7,7 @@ import { useCart } from "@/lib/cart-context";
 import TOP_MARCAS from "@/data/top-marcas.json";
 
 const ANNOUNCEMENTS = [
-  "🚚 Envío GRATIS en pedidos superiores a 50€",
+  "🚚 Envío GRATIS en pedidos superiores a 100€",
   "✨ Hasta 50% de descuento en perfumes seleccionados",
   "🎁 Regala fragancia — encuentra el perfume perfecto",
 ];
@@ -32,7 +32,6 @@ const NAV_LINKS = [
   { href: "/shop?cat=cuerpo",           label: "Tratamiento Cuerpo" },
   { href: "/shop?cat=solares",          label: "Solares" },
   { href: "/shop?cat=cuidado",          label: "Cuidado Personal" },
-  { href: "/shop?cat=gafas",            label: "Gafas de Sol" },
 ];
 
 /**

@@ -174,18 +174,19 @@ img { max-width: 100%; height: auto; }
   justify-content: center;
   text-decoration: none;
   line-height: 0;
+  transform: translateY(-8px);
 }
 .pf-logo__img {
-  height: 88px;
+  height: 112px;
   width: auto;
   object-fit: contain;
   display: block;
 }
 @media (max-width: 768px) {
-  .pf-logo__img { height: 70px; }
+  .pf-logo__img { height: 88px; }
 }
 @media (max-width: 480px) {
-  .pf-logo__img { height: 58px; }
+  .pf-logo__img { height: 70px; }
 }
 
 /* RIGHT group */

@@ -11,7 +11,7 @@ function formatEuro(n: number) {
 }
 
 const ENVIO = 0; // PRUEBAS: envío desactivado temporalmente
-const ENVIO_GRATIS_DESDE = 0;
+const ENVIO_GRATIS_DESDE = 100;
 
 const PROVINCIAS = [
   "Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Baleares",
