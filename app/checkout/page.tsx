@@ -12,10 +12,13 @@ function formatEuro(n: number) {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
 }
 
-const ENVIO = 0; // PRUEBAS: envío desactivado temporalmente
+const ENVIO = 5.99;
 const ENVIO_GRATIS_DESDE = 100;
+const PAYPAL_SURCHARGE = 0.02;   // 2% extra por gestión PayPal
+const REEMBOLSO_FEE   = 3.00;   // suplemento contra-reembolso
 
 const PROVINCIAS = [
+  "── España ──",
   "Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Baleares",
   "Barcelona","Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ciudad Real",
   "Córdoba","La Coruña","Cuenca","Gerona","Granada","Guadalajara","Guipúzcoa",
@@ -23,6 +26,8 @@ const PROVINCIAS = [
   "Navarra","Orense","Palencia","Las Palmas","Pontevedra","La Rioja","Salamanca",
   "Santa Cruz de Tenerife","Segovia","Sevilla","Soria","Tarragona","Teruel","Toledo",
   "Valencia","Valladolid","Vizcaya","Zamora","Zaragoza","Ceuta","Melilla",
+  "── Portugal Continental ──",
+  "Portugal",
 ];
 
 /** Prefijos CP de zonas sin servicio de envío */
@@ -97,8 +102,17 @@ export default function CheckoutPage() {
   const [paypalError,    setPaypalError]    = useState("");
   const [reembolsoSent,  setReembolsoSent]  = useState(false);
 
-  const envio      = totalPrice >= ENVIO_GRATIS_DESDE ? 0 : ENVIO;
-  const totalFinal = totalPrice + envio;
+  const envio           = totalPrice >= ENVIO_GRATIS_DESDE ? 0 : ENVIO;
+  const totalBase       = totalPrice + envio;
+  const paypalSurcharge = Math.round(totalBase * PAYPAL_SURCHARGE * 100) / 100;
+  const totalPaypal     = Math.round((totalBase + paypalSurcharge) * 100) / 100;
+  const totalReembolso  = Math.round((totalBase + REEMBOLSO_FEE) * 100) / 100;
+  // totalFinal según método seleccionado
+  const totalFinal = payMethod === "paypal"
+    ? totalPaypal
+    : payMethod === "reembolso"
+      ? totalReembolso
+      : totalBase;
 
   // Auto-submit hidden form when TPV params arrive
   useEffect(() => {
@@ -109,24 +123,71 @@ export default function CheckoutPage() {
 
   // Auto-relleno ciudad y provincia al introducir CP
   useEffect(() => {
-    const digits = cp.replace(/\D/g, "");
+    const raw    = cp.trim();
+    const digits = raw.replace(/\D/g, "");
 
     if (digits.length === 0) { setCpError(""); setZoneError(""); return; }
 
-    const prefix = digits.slice(0, 2);
-
-    // ── Zona vetada: Canarias — salta desde los 2 primeros dígitos ──
-    if (digits.length >= 2 && BANNED_CP_PREFIXES.has(prefix)) {
-      const zona = prefix === "35" ? "Las Palmas (Canarias)" : "Santa Cruz de Tenerife (Canarias)";
-      setZoneError(getBannedZoneMsg(zona));
+    // ── Andorra: AD + 3 dígitos ──
+    if (/^[Aa][Dd]/i.test(raw)) {
+      setZoneError(getBannedZoneMsg("Andorra"));
       setCiudad(""); setProvincia("");
       return;
     }
 
-    // ── Zona vetada: Madeira y Azores — salta desde el 1er dígito ──
-    if (digits.startsWith("9")) {
-      const num = parseInt(digits.padEnd(5, "0"), 10);
-      const zona = num <= 93900 ? "Madeira" : "Azores";
+    // ── Detectar si es CP portugués:
+    //    - tiene guión (formato XXXX-XXX), O
+    //    - tiene 6+ dígitos sin guión (los CPs españoles son exactamente 5)
+    const isPortuguese = raw.includes("-") || digits.length >= 6;
+
+    if (isPortuguese) {
+      if (digits.length < 4) { setCpError(""); setZoneError(""); return; }
+
+      const firstFour = parseInt(digits.slice(0, 4).padEnd(4, "0"), 10);
+
+      // Madeira: 9000–9399 → bloqueado
+      if (firstFour >= 9000 && firstFour <= 9399) {
+        setZoneError(getBannedZoneMsg("Madeira (Portugal)"));
+        setCiudad(""); setProvincia("");
+        return;
+      }
+      // Açores: 9400–9980 → bloqueado
+      if (firstFour >= 9400 && firstFour <= 9980) {
+        setZoneError(getBannedZoneMsg("Açores (Portugal)"));
+        setCiudad(""); setProvincia("");
+        return;
+      }
+
+      setZoneError("");
+      if (digits.length !== 7) { setCpError(""); return; }
+
+      setProvincia("Portugal");
+      const formattedPt = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+      const controller = new AbortController();
+      setCpLooking(true); setCpError("");
+
+      fetch(`https://api.zippopotam.us/pt/${formattedPt}`, { signal: controller.signal })
+        .then((r) => { if (!r.ok) throw new Error("not found"); return r.json(); })
+        .then((data) => {
+          const place = data?.places?.[0]?.["place name"];
+          if (place) setCiudad(place);
+          else setCpError("Código postal no encontrado — introduce la ciudad manualmente");
+        })
+        .catch((err) => {
+          if (err.name !== "AbortError")
+            setCpError("No se pudo obtener la ciudad — introdúcela manualmente");
+        })
+        .finally(() => setCpLooking(false));
+
+      return () => controller.abort();
+    }
+
+    // ── CP español ──
+    const prefix = digits.slice(0, 2);
+
+    // Canarias — salta desde los 2 primeros dígitos
+    if (digits.length >= 2 && BANNED_CP_PREFIXES.has(prefix)) {
+      const zona = prefix === "35" ? "Las Palmas (Canarias)" : "Santa Cruz de Tenerife (Canarias)";
       setZoneError(getBannedZoneMsg(zona));
       setCiudad(""); setProvincia("");
       return;
@@ -135,20 +196,14 @@ export default function CheckoutPage() {
     setZoneError("");
     if (digits.length !== 5) { setCpError(""); return; }
 
-    // Provincia instantánea por prefijo
     const prov = CP_PROVINCIA[prefix];
     if (prov) setProvincia(prov);
 
-    // Ciudad desde API zippopotam.us (gratuita, sin clave)
     const controller = new AbortController();
-    setCpLooking(true);
-    setCpError("");
+    setCpLooking(true); setCpError("");
 
     fetch(`https://api.zippopotam.us/es/${digits}`, { signal: controller.signal })
-      .then((r) => {
-        if (!r.ok) throw new Error("not found");
-        return r.json();
-      })
+      .then((r) => { if (!r.ok) throw new Error("not found"); return r.json(); })
       .then((data) => {
         const place = data?.places?.[0]?.["place name"];
         if (place) setCiudad(place);
@@ -332,10 +387,33 @@ export default function CheckoutPage() {
                   <div className="checkout-row-3">
                     <div className="checkout-field">
                       <label htmlFor="cp">Código postal *</label>
-                      <input id="cp" type="text" required pattern="[0-9]{5}"
-                        maxLength={5} inputMode="numeric"
-                        value={cp} onChange={(e) => setCp(e.target.value.replace(/\D/g, ""))}
-                        placeholder="28001" />
+                      <input id="cp" type="text" required
+                        maxLength={8}
+                        value={cp}
+                        onChange={(e) => {
+                          let val = e.target.value;
+                          // Andorra: dejar pasar "AD" + dígitos
+                          if (/^[Aa][Dd]/i.test(val)) {
+                            val = val.replace(/[^ADad0-9]/gi, "").slice(0, 6).toUpperCase();
+                          } else {
+                            // Solo dígitos y un guión
+                            val = val.replace(/[^0-9-]/g, "");
+                            const onlyDigits = val.replace(/-/g, "");
+                            if (val.includes("-")) {
+                              // Mantener formato XXXX-XXX
+                              const parts = val.split("-");
+                              val = `${parts[0].slice(0,4)}-${(parts[1] || "").slice(0,3)}`;
+                            } else if (onlyDigits.length >= 6) {
+                              // 6+ dígitos sin guión → formato portugués XXXX-XXX
+                              val = `${onlyDigits.slice(0,4)}-${onlyDigits.slice(4,7)}`;
+                            }
+                            // 1-5 dígitos sin guión → CP español, se deja como está
+                          }
+                          setCp(val);
+                        }}
+                        placeholder="28001 / 1000-001"
+                        autoComplete="postal-code"
+                      />
                     </div>
                     <div className="checkout-field checkout-field--grow">
                       <label htmlFor="ciudad">
@@ -354,6 +432,7 @@ export default function CheckoutPage() {
                       value={provincia}
                       onChange={(e) => {
                         const val = e.target.value;
+                        if (!val || val.startsWith("──")) return;
                         setProvincia(val);
                         if (BANNED_PROVINCES.has(val)) {
                           setZoneError(getBannedZoneMsg(val + " (Canarias)"));
@@ -363,9 +442,15 @@ export default function CheckoutPage() {
                       }}
                       className="checkout-select">
                       <option value="">Selecciona provincia…</option>
-                      {PROVINCIAS.map((p) => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
+                      {PROVINCIAS.map((p) => {
+                        const isSeparator = p.startsWith("──");
+                        return (
+                          <option key={p} value={isSeparator ? "" : p} disabled={isSeparator}
+                            style={isSeparator ? {color:"#aaa", fontStyle:"italic"} : {}}>
+                            {p}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
 
@@ -476,7 +561,7 @@ export default function CheckoutPage() {
                               <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
                               <line x1="1" y1="10" x2="23" y2="10"/>
                             </svg>
-                            Pagar {formatEuro(totalFinal)} con tarjeta
+                            Pagar {formatEuro(totalBase)} con tarjeta
                           </>
                         )}
                       </button>
@@ -502,7 +587,7 @@ export default function CheckoutPage() {
                           <strong>Pago al recibir el pedido</strong>
                           <p>Abonarás el importe en efectivo al repartidor cuando recibas tu pedido. Sin necesidad de tarjeta ni cuenta online.</p>
                           <p className="checkout-reembolso-fee">
-                            Se añade un suplemento de <strong>3,00 €</strong> por gestión de contra-reembolso.
+                            Se añade un suplemento de <strong>{formatEuro(REEMBOLSO_FEE)}</strong> por gestión de contra-reembolso.
                           </p>
                         </div>
                       </div>
@@ -525,7 +610,7 @@ export default function CheckoutPage() {
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <polyline points="20 6 9 17 4 12"/>
                             </svg>
-                            Confirmar pedido — {formatEuro(totalFinal + 3)} contra-reembolso
+                            Confirmar pedido — {formatEuro(totalReembolso)} contra-reembolso
                           </>
                         )}
                       </button>
@@ -556,6 +641,10 @@ export default function CheckoutPage() {
                         <>
                           <p className="checkout-pay-info">
                             Haz clic en el botón de PayPal. Podrás pagar con tu cuenta PayPal o con tarjeta a través de PayPal.
+                          </p>
+                          <p className="checkout-paypal-surcharge-note">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Se aplica un suplemento del 2% por comisiones de PayPal ({formatEuro(paypalSurcharge)}). Total: <strong>{formatEuro(totalPaypal)}</strong>
                           </p>
                           {paypalError && <p className="checkout-error">{paypalError}</p>}
                           <div className="checkout-paypal-btn-wrap">
@@ -636,14 +725,43 @@ export default function CheckoutPage() {
                   <span>{formatEuro(totalPrice)}</span>
                 </div>
                 <div className="checkout-totals__row">
-                  <span>Envío</span>
-                  <span>{envio === 0 ? "✓ Gratis" : formatEuro(envio)}</span>
+                  <span>Gastos de envío</span>
+                  <span className={envio === 0 ? "checkout-totals__free" : ""}>
+                    {envio === 0 ? "✓ Gratis" : formatEuro(envio)}
+                  </span>
                 </div>
+
+                {/* Barra de progreso hacia envío gratis */}
                 {envio > 0 && (
-                  <p className="checkout-totals__free-note">
-                    ¡{formatEuro(ENVIO_GRATIS_DESDE - totalPrice)} más para envío gratis!
-                  </p>
+                  <div className="checkout-shipping-progress">
+                    <div className="checkout-shipping-progress__bar">
+                      <div
+                        className="checkout-shipping-progress__fill"
+                        style={{ width: `${Math.min((totalPrice / ENVIO_GRATIS_DESDE) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <p className="checkout-shipping-progress__label">
+                      Añade <strong>{formatEuro(ENVIO_GRATIS_DESDE - totalPrice)}</strong> más y el envío será gratis
+                    </p>
+                  </div>
                 )}
+
+                {/* Recargo PayPal */}
+                {payMethod === "paypal" && (
+                  <div className="checkout-totals__row checkout-totals__surcharge">
+                    <span>Comisión PayPal (2%)</span>
+                    <span>+{formatEuro(paypalSurcharge)}</span>
+                  </div>
+                )}
+
+                {/* Suplemento contra-reembolso */}
+                {payMethod === "reembolso" && (
+                  <div className="checkout-totals__row checkout-totals__surcharge">
+                    <span>Gestión contra-reembolso</span>
+                    <span>+{formatEuro(REEMBOLSO_FEE)}</span>
+                  </div>
+                )}
+
                 <div className="checkout-totals__row checkout-totals__total">
                   <span>Total</span>
                   <strong>{formatEuro(totalFinal)}</strong>

@@ -2097,11 +2097,48 @@ img { max-width: 100%; height: auto; }
   margin-top: 4px;
 }
 .checkout-totals__total strong { font-size: 1.2rem; }
-.checkout-totals__free-note {
-  font-size: 0.78rem;
-  color: #27ae60;
-  margin: -4px 0 0;
+.checkout-totals__free { color: #27ae60; font-weight: 600; }
+.checkout-totals__surcharge { color: #888; font-size: 0.85rem; }
+
+/* ── Barra de progreso envío gratis ── */
+.checkout-shipping-progress {
+  margin: 6px 0 10px;
 }
+.checkout-shipping-progress__bar {
+  height: 6px;
+  background: #ececec;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.checkout-shipping-progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+.checkout-shipping-progress__label {
+  font-size: 0.78rem;
+  color: #888;
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+.checkout-shipping-progress__label strong { color: #444; }
+
+/* ── Nota recargo PayPal ── */
+.checkout-paypal-surcharge-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #888;
+  background: #f8f8f8;
+  border-radius: 7px;
+  padding: 9px 12px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+.checkout-paypal-surcharge-note svg { flex-shrink: 0; margin-top: 1px; }
+.checkout-paypal-surcharge-note strong { color: #333; }
 
 .checkout-payment-logos {
   margin-top: 20px;
