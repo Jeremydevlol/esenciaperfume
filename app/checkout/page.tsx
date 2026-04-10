@@ -23,6 +23,17 @@ const PROVINCIAS = [
   "Valencia","Valladolid","Vizcaya","Zamora","Zaragoza","Ceuta","Melilla",
 ];
 
+/** Prefijos CP de zonas sin servicio de envío */
+const BANNED_CP_PREFIXES = new Set(["35", "38"]); // Canarias (Las Palmas, Tenerife)
+
+/** Provincias sin servicio de envío */
+const BANNED_PROVINCES = new Set(["Las Palmas", "Santa Cruz de Tenerife"]);
+
+/** Mensaje de error para zona no cubierta */
+function getBannedZoneMsg(zona: string): string {
+  return `❌ Lo sentimos, no realizamos envíos a ${zona}. Servimos pedidos a España Peninsular y Portugal Continental únicamente.`;
+}
+
 /** Primeros 2 dígitos del CP → provincia española */
 const CP_PROVINCIA: Record<string, string> = {
   "01":"Álava","02":"Albacete","03":"Alicante","04":"Almería","05":"Ávila",
@@ -72,8 +83,9 @@ export default function CheckoutPage() {
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState("");
   const [tpvParams,   setTpvParams]   = useState<TpvParams | null>(null);
-  const [cpLooking,   setCpLooking]   = useState(false);   // spinner mientras busca
-  const [cpError,     setCpError]     = useState("");       // CP no encontrado
+  const [cpLooking,   setCpLooking]   = useState(false);
+  const [cpError,     setCpError]     = useState("");
+  const [zoneError,   setZoneError]   = useState("");       // zona sin envío
 
   const envio      = totalPrice >= ENVIO_GRATIS_DESDE ? 0 : ENVIO;
   const totalFinal = totalPrice + envio;
@@ -85,13 +97,37 @@ export default function CheckoutPage() {
     }
   }, [tpvParams]);
 
-  // Auto-relleno ciudad y provincia al introducir CP (5 dígitos)
+  // Auto-relleno ciudad y provincia al introducir CP
   useEffect(() => {
     const digits = cp.replace(/\D/g, "");
+
+    if (digits.length === 0) { setCpError(""); setZoneError(""); return; }
+
+    const prefix = digits.slice(0, 2);
+
+    // ── Zona vetada: Canarias — salta desde los 2 primeros dígitos ──
+    if (digits.length >= 2 && BANNED_CP_PREFIXES.has(prefix)) {
+      const zona = prefix === "35" ? "Las Palmas (Canarias)" : "Santa Cruz de Tenerife (Canarias)";
+      setZoneError(getBannedZoneMsg(zona));
+      setCiudad(""); setProvincia("");
+      return;
+    }
+
+    // ── Zona vetada: Madeira y Azores — salta desde el 1er dígito ──
+    // Ningún CP español empieza por 9 (van del 01 al 52), así que cualquier
+    // CP que empiece por 9 es Portugal insular (Madeira 9000-9390 / Azores 9400-9980)
+    if (digits.startsWith("9")) {
+      const num = parseInt(digits.padEnd(5, "0"), 10);
+      const zona = num <= 93900 ? "Madeira" : "Azores";
+      setZoneError(getBannedZoneMsg(zona));
+      setCiudad(""); setProvincia("");
+      return;
+    }
+
+    setZoneError("");
     if (digits.length !== 5) { setCpError(""); return; }
 
     // Provincia instantánea por prefijo
-    const prefix = digits.slice(0, 2);
     const prov = CP_PROVINCIA[prefix];
     if (prov) setProvincia(prov);
 
@@ -264,7 +300,16 @@ export default function CheckoutPage() {
                   <div className="checkout-field">
                     <label htmlFor="provincia">Provincia *</label>
                     <select id="provincia" required
-                      value={provincia} onChange={(e) => setProvincia(e.target.value)}
+                      value={provincia}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProvincia(val);
+                        if (BANNED_PROVINCES.has(val)) {
+                          setZoneError(getBannedZoneMsg(val + " (Canarias)"));
+                        } else {
+                          setZoneError("");
+                        }
+                      }}
                       className="checkout-select">
                       <option value="">Selecciona provincia…</option>
                       {PROVINCIAS.map((p) => (
@@ -272,6 +317,18 @@ export default function CheckoutPage() {
                       ))}
                     </select>
                   </div>
+
+                  {/* Alerta zona sin envío */}
+                  {zoneError && (
+                    <div className="checkout-zone-error" role="alert">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                      <span>{zoneError}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* BLOQUE 3: Pago */}
@@ -288,7 +345,7 @@ export default function CheckoutPage() {
                   {error && <p className="checkout-error">{error}</p>}
 
                   <button type="submit" className="checkout-pay-btn"
-                    disabled={loading || items.length === 0}>
+                    disabled={loading || items.length === 0 || !!zoneError}>
                     {loading ? (
                       <>
                         <span className="checkout-spinner" />
