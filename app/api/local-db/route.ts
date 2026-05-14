@@ -7,7 +7,11 @@ const DB_DIR = path.join(process.cwd(), "data", "db");
 type Row = Record<string, unknown>;
 
 function ensureDir() {
-  if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
+  } catch {
+    // Vercel: read-only filesystem
+  }
 }
 
 function tablePath(name: string) {
@@ -22,8 +26,12 @@ function readTable(name: string): Row[] {
 }
 
 function writeTable(name: string, rows: Row[]) {
-  ensureDir();
-  fs.writeFileSync(tablePath(name), JSON.stringify(rows, null, 2));
+  try {
+    ensureDir();
+    fs.writeFileSync(tablePath(name), JSON.stringify(rows, null, 2));
+  } catch {
+    // Vercel: read-only filesystem — silently ignore write failures
+  }
 }
 
 function generateId(): string {
@@ -45,10 +53,14 @@ function getNextSerial(table: string): number {
   }
   const val = (_counters![table] || 0) + 1;
   _counters![table] = val;
-  fs.writeFileSync(
-    path.join(DB_DIR, "_counters.json"),
-    JSON.stringify(_counters, null, 2),
-  );
+  try {
+    fs.writeFileSync(
+      path.join(DB_DIR, "_counters.json"),
+      JSON.stringify(_counters, null, 2),
+    );
+  } catch {
+    // Vercel: read-only filesystem
+  }
   return val;
 }
 
