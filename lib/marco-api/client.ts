@@ -100,8 +100,8 @@ export async function fetchProductDetail(
 
     // Nombre: buscar en el título o en un <td> / <h> que contenga el nombre
     const nameMatch =
-      html.match(/<td[^>]*class="[^"]*titulo[^"]*"[^>]*>(.*?)<\/td>/is) ||
-      html.match(/<h\d[^>]*>(.*?)<\/h\d>/is) ||
+      html.match(/<td[^>]*class="[^"]*titulo[^"]*"[^>]*>([\s\S]*?)<\/td>/i) ||
+      html.match(/<h\d[^>]*>([\s\S]*?)<\/h\d>/i) ||
       html.match(/<title>(.*?)<\/title>/i);
     const nombre = nameMatch ? decodeHTML(nameMatch[1]) : "";
 
