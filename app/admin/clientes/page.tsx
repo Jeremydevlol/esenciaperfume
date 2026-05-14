@@ -95,7 +95,7 @@ export default function ClientesPage() {
 
     const { data, count, error } = await query;
     if (!error) {
-      setCustomers(data ?? []);
+      setCustomers((data ?? []) as Customer[]);
       setTotalCount(count ?? 0);
     }
     setLoading(false);
@@ -189,7 +189,7 @@ export default function ClientesPage() {
       .select("*")
       .eq("customer_id", c.id)
       .order("created_at", { ascending: false });
-    setDetailOrders(data ?? []);
+    setDetailOrders((data ?? []) as Order[]);
     setLoadingDetail(false);
   };
 

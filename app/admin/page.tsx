@@ -85,9 +85,9 @@ export default function AdminDashboardPage() {
             .limit(5),
         ]);
 
-        const allOrders = orders ?? [];
+        const allOrders: Order[] = (orders ?? []) as Order[];
         const pendingOrders = allOrders.filter(
-          (o) => o.status === "pending" || o.status === "confirmed"
+          (o: Order) => o.status === "pending" || o.status === "confirmed"
         );
         const revenueToday = (todayOrders ?? []).reduce(
           (sum: number, o: Order) => sum + (o.total ?? 0),
@@ -109,8 +109,8 @@ export default function AdminDashboardPage() {
           lowStockCount: lowStock?.length ?? 0,
         });
 
-        setRecentOrders(recent ?? []);
-        setLowStockProducts(lowStock ?? []);
+        setRecentOrders((recent ?? []) as Order[]);
+        setLowStockProducts((lowStock ?? []) as Product[]);
       } catch {
         // silently handle
       } finally {

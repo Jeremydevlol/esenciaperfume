@@ -144,8 +144,8 @@ export default function AnaliticasPage() {
     ]);
 
     const orders = (ordersRes.data ?? []) as unknown as OrderWithItems[];
-    const customers = customersRes.data ?? [];
-    const allOrders = allOrdersRes.data ?? [];
+    const customers = (customersRes.data ?? []) as { id: string }[];
+    const allOrders = (allOrdersRes.data ?? []) as { id: string; status: string; created_at: string }[];
 
     // KPIs
     let revenue = 0;

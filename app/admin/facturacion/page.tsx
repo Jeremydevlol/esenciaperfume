@@ -93,7 +93,7 @@ export default function FacturacionPage() {
       .from("orders")
       .select("*")
       .order("order_number", { ascending: false });
-    setOrders(data ?? []);
+    setOrders((data ?? []) as Order[]);
   }, []);
 
   useEffect(() => {
