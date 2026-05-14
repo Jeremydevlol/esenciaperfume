@@ -106,7 +106,7 @@ export default function ClientesPage() {
   }, [fetchCustomers]);
 
   /* ── Search debounce ────────────────────────────────────────────── */
-  const searchTimer = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const handleSearch = (value: string) => {
     setSearch(value);
     clearTimeout(searchTimer.current);
