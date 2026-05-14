@@ -2,57 +2,26 @@
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import { createClient } from "@/lib/supabase/client";
-import type { Product, StockMovement } from "@/lib/supabase/types";
-import { useCallback, useEffect, useState } from "react";
+import type { Product } from "@/lib/supabase/types";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-type Tab = "all" | "low" | "out";
-type MovementType = "in" | "out" | "adjustment";
+const PAGE_SIZE = 20;
 
 const EUR = (n: number) =>
   n.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
-
-function stockStatus(p: Product) {
-  if (p.stock === 0) return "out";
-  if (p.stock <= p.min_stock) return "low";
-  return "ok";
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  ok: "OK",
-  low: "Bajo",
-  out: "Agotado",
-};
-const STATUS_BADGE: Record<string, string> = {
-  ok: "admin-badge admin-badge--green admin-badge--dot",
-  low: "admin-badge admin-badge--amber admin-badge--dot",
-  out: "admin-badge admin-badge--red admin-badge--dot",
-};
-
-const MOVEMENT_LABELS: Record<string, string> = {
-  in: "Entrada",
-  out: "Salida",
-  adjustment: "Ajuste",
-  return: "Devolución",
-};
 
 export default function InventarioPage() {
   const supabase = createClient();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
-  // Stock adjustment modal
-  const [adjustProduct, setAdjustProduct] = useState<Product | null>(null);
-  const [adjustType, setAdjustType] = useState<MovementType>("in");
-  const [adjustQty, setAdjustQty] = useState("");
-  const [adjustNotes, setAdjustNotes] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  // Movement history modal
-  const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
-  const [movements, setMovements] = useState<StockMovement[]>([]);
-  const [loadingMovements, setLoadingMovements] = useState(false);
+  const [liveStock, setLiveStock] = useState<Record<string, number>>({});
+  const [loadingStock, setLoadingStock] = useState(false);
+  const [stockProgress, setStockProgress] = useState("");
+  const stockAbort = useRef<AbortController | null>(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -60,7 +29,7 @@ export default function InventarioPage() {
       .from("products")
       .select("*")
       .eq("active", true)
-      .order("stock", { ascending: true });
+      .order("name", { ascending: true });
     setProducts((data as Product[]) ?? []);
     setLoading(false);
   }, [supabase]);
@@ -70,77 +39,120 @@ export default function InventarioPage() {
   }, [fetchProducts]);
 
   const filtered = products.filter((p) => {
-    if (activeTab === "low") return stockStatus(p) === "low";
-    if (activeTab === "out") return stockStatus(p) === "out";
-    return true;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(q) ||
+      p.sku.toLowerCase().includes(q) ||
+      p.brand.toLowerCase().includes(q)
+    );
   });
 
-  const totalProducts = products.length;
-  const lowStock = products.filter((p) => stockStatus(p) === "low").length;
-  const outOfStock = products.filter((p) => stockStatus(p) === "out").length;
-  const totalValue = products.reduce(
-    (s, p) => s + p.stock * (p.cost_price ?? 0),
-    0,
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageProducts = filtered.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
   );
 
-  /* ── Stock adjustment ─────────────────────────────────────────────── */
-  const openAdjust = (p: Product) => {
-    setAdjustProduct(p);
-    setAdjustType("in");
-    setAdjustQty("");
-    setAdjustNotes("");
-  };
+  const getStock = (sku: string): number | null =>
+    sku in liveStock ? liveStock[sku] : null;
 
-  const submitAdjust = async () => {
-    if (!adjustProduct || !adjustQty) return;
-    setSaving(true);
-    const qty = parseInt(adjustQty, 10);
-    if (isNaN(qty) || qty <= 0) {
-      setSaving(false);
+  const totalWithStock = Object.keys(liveStock).length;
+  const outOfStock = Object.values(liveStock).filter((v) => v === 0).length;
+  const lowStock = Object.values(liveStock).filter((v) => v > 0 && v <= 5).length;
+  const inStock = Object.values(liveStock).filter((v) => v > 5).length;
+
+  const fetchLiveStockForPage = useCallback(async () => {
+    const skus = pageProducts.map((p) => p.sku);
+    if (skus.length === 0) return;
+    setLoadingStock(true);
+    setStockProgress("Consultando stock en tiempo real...");
+
+    try {
+      const res = await fetch("/api/stock-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skus }),
+      });
+      const { stocks } = await res.json();
+      if (stocks) {
+        setLiveStock((prev) => ({ ...prev, ...stocks }));
+      }
+    } catch {
+      setStockProgress("Error al consultar stock");
+    } finally {
+      setLoadingStock(false);
+      setStockProgress("");
+    }
+  }, [pageProducts.map((p) => p.sku).join(",")]);
+
+  const fetchAllStock = async () => {
+    if (loadingStock) {
+      stockAbort.current?.abort();
+      setLoadingStock(false);
+      setStockProgress("");
       return;
     }
 
-    const prev = adjustProduct.stock;
-    let newStock: number;
-    if (adjustType === "in") newStock = prev + qty;
-    else if (adjustType === "out") newStock = Math.max(0, prev - qty);
-    else newStock = qty;
+    setLoadingStock(true);
+    stockAbort.current = new AbortController();
+    const allSkus = filtered.map((p) => p.sku);
+    const BATCH = 20;
+    let done = 0;
 
-    await supabase.from("stock_movements").insert({
-      product_id: adjustProduct.id,
-      type: adjustType,
-      quantity: qty,
-      prev_stock: prev,
-      new_stock: newStock,
-      notes: adjustNotes,
-    });
+    try {
+      for (let i = 0; i < allSkus.length; i += BATCH) {
+        if (stockAbort.current.signal.aborted) break;
+        const batch = allSkus.slice(i, i + BATCH);
+        setStockProgress(
+          `Consultando stock… ${done}/${allSkus.length} (${Math.round((done / allSkus.length) * 100)}%)`,
+        );
 
-    await supabase
-      .from("products")
-      .update({ stock: newStock })
-      .eq("id", adjustProduct.id);
-
-    setAdjustProduct(null);
-    setSaving(false);
-    fetchProducts();
+        try {
+          const res = await fetch("/api/stock-check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ skus: batch }),
+            signal: stockAbort.current.signal,
+          });
+          const { stocks } = await res.json();
+          if (stocks) {
+            setLiveStock((prev) => ({ ...prev, ...stocks }));
+          }
+        } catch {
+          if (stockAbort.current.signal.aborted) break;
+        }
+        done += batch.length;
+      }
+    } finally {
+      setLoadingStock(false);
+      setStockProgress("");
+    }
   };
 
-  /* ── Movement history ─────────────────────────────────────────────── */
-  const openHistory = async (p: Product) => {
-    setHistoryProduct(p);
-    setLoadingMovements(true);
-    const { data } = await supabase
-      .from("stock_movements")
-      .select("*")
-      .eq("product_id", p.id)
-      .order("created_at", { ascending: false });
-    setMovements((data as StockMovement[]) ?? []);
-    setLoadingMovements(false);
-  };
+  function stockBadge(stock: number | null) {
+    if (stock === null)
+      return { cls: "admin-badge admin-badge--gray admin-badge--dot", label: "—" };
+    if (stock === 0)
+      return {
+        cls: "admin-badge admin-badge--red admin-badge--dot",
+        label: "Agotado",
+      };
+    if (stock <= 5)
+      return {
+        cls: "admin-badge admin-badge--amber admin-badge--dot",
+        label: `Bajo (${stock})`,
+      };
+    return {
+      cls: "admin-badge admin-badge--green admin-badge--dot",
+      label: `OK (${stock})`,
+    };
+  }
 
   return (
     <AdminShell pageTitle="Inventario">
-      {/* ── Stat cards ───────────────────────────────────────────────── */}
+      {/* Stat cards */}
       <div className="admin-stats-grid">
         <div className="admin-stat-card">
           <div className="admin-stat-card__icon admin-stat-card__icon--blue">
@@ -150,10 +162,20 @@ export default function InventarioPage() {
           </div>
           <div className="admin-stat-card__info">
             <p className="admin-stat-card__label">Total Productos</p>
-            <p className="admin-stat-card__value">{totalProducts}</p>
+            <p className="admin-stat-card__value">{filtered.length}</p>
           </div>
         </div>
-
+        <div className="admin-stat-card">
+          <div className="admin-stat-card__icon admin-stat-card__icon--green">
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="admin-stat-card__info">
+            <p className="admin-stat-card__label">En Stock</p>
+            <p className="admin-stat-card__value">{totalWithStock > 0 ? inStock : "—"}</p>
+          </div>
+        </div>
         <div className="admin-stat-card">
           <div className="admin-stat-card__icon admin-stat-card__icon--amber">
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
@@ -162,10 +184,9 @@ export default function InventarioPage() {
           </div>
           <div className="admin-stat-card__info">
             <p className="admin-stat-card__label">Bajo Stock</p>
-            <p className="admin-stat-card__value">{lowStock}</p>
+            <p className="admin-stat-card__value">{totalWithStock > 0 ? lowStock : "—"}</p>
           </div>
         </div>
-
         <div className="admin-stat-card">
           <div className="admin-stat-card__icon admin-stat-card__icon--red">
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
@@ -174,310 +195,184 @@ export default function InventarioPage() {
           </div>
           <div className="admin-stat-card__info">
             <p className="admin-stat-card__label">Sin Stock</p>
-            <p className="admin-stat-card__value">{outOfStock}</p>
-          </div>
-        </div>
-
-        <div className="admin-stat-card">
-          <div className="admin-stat-card__icon admin-stat-card__icon--green">
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-            </svg>
-          </div>
-          <div className="admin-stat-card__info">
-            <p className="admin-stat-card__label">Valor Total Inventario</p>
-            <p className="admin-stat-card__value">{EUR(totalValue)}</p>
+            <p className="admin-stat-card__value">{totalWithStock > 0 ? outOfStock : "—"}</p>
           </div>
         </div>
       </div>
 
-      {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div className="admin-tabs">
-        {([["all", "Todo"], ["low", "Stock Bajo"], ["out", "Sin Stock"]] as const).map(
-          ([key, label]) => (
-            <button
-              key={key}
-              className={`admin-tab${activeTab === key ? " admin-tab--active" : ""}`}
-              onClick={() => setActiveTab(key)}
-            >
-              {label}
-            </button>
-          ),
-        )}
+      {/* Toolbar */}
+      <div className="admin-toolbar">
+        <div className="admin-toolbar__left">
+          <input
+            className="admin-input"
+            style={{ width: 300 }}
+            placeholder="Buscar por nombre, SKU o marca…"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
+        <div className="admin-toolbar__right" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {stockProgress && (
+            <span style={{ fontSize: 12, color: "#64748b" }}>{stockProgress}</span>
+          )}
+          <button
+            className="admin-btn admin-btn--sm admin-btn--secondary"
+            onClick={fetchLiveStockForPage}
+            disabled={loadingStock}
+          >
+            {loadingStock ? "Consultando…" : "Stock página actual"}
+          </button>
+          <button
+            className={`admin-btn admin-btn--sm ${loadingStock ? "admin-btn--danger" : "admin-btn--primary"}`}
+            onClick={fetchAllStock}
+          >
+            {loadingStock ? "⏹ Detener" : "⟳ Sync todo el stock"}
+          </button>
+        </div>
       </div>
 
-      {/* ── Table ────────────────────────────────────────────────────── */}
+      {/* Table */}
       <div className="admin-card admin-card--flush">
         {loading ? (
-          <div className="admin-loading">
-            <div className="admin-spinner" />
-          </div>
+          <div className="admin-loading"><div className="admin-spinner" /></div>
         ) : filtered.length === 0 ? (
           <div className="admin-empty">
-            <div className="admin-empty__icon">
-              <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-              </svg>
-            </div>
             <p className="admin-empty__title">Sin resultados</p>
-            <p className="admin-empty__text">No hay productos en esta categoría.</p>
+            <p className="admin-empty__text">No hay productos que coincidan.</p>
           </div>
         ) : (
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th>SKU</th>
-                  <th>Stock Actual</th>
-                  <th>Stock Mínimo</th>
-                  <th>Precio Coste</th>
-                  <th>Valor Stock</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((p) => {
-                  const s = stockStatus(p);
-                  return (
-                    <tr key={p.id}>
-                      <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          {p.image_url ? (
-                            <img
-                              src={p.image_url}
-                              alt=""
-                              className="admin-product-thumb"
-                            />
-                          ) : (
-                            <span
-                              className="admin-product-thumb"
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                background: "#f1f5f9",
-                                color: "#94a3b8",
-                                fontSize: 14,
-                              }}
-                            >
-                              —
+          <>
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>SKU</th>
+                    <th>Marca</th>
+                    <th>Precio</th>
+                    <th>PVP</th>
+                    <th>Stock (perfumedigital)</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageProducts.map((p) => {
+                    const stock = getStock(p.sku);
+                    const badge = stockBadge(stock);
+                    return (
+                      <tr key={p.id}>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            {p.image_url ? (
+                              <img src={p.image_url} alt="" className="admin-product-thumb" />
+                            ) : (
+                              <span
+                                className="admin-product-thumb"
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  background: "#f1f5f9",
+                                  color: "#94a3b8",
+                                  fontSize: 14,
+                                }}
+                              >
+                                —
+                              </span>
+                            )}
+                            <span style={{ fontWeight: 600, maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                              {p.name}
                             </span>
-                          )}
-                          <span style={{ fontWeight: 600 }}>{p.name}</span>
-                        </div>
-                      </td>
-                      <td style={{ fontFamily: "monospace", fontSize: 12 }}>{p.sku}</td>
-                      <td>
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            color:
-                              s === "out"
-                                ? "#dc2626"
-                                : s === "low"
-                                  ? "#b45309"
-                                  : "#15803d",
-                          }}
+                          </div>
+                        </td>
+                        <td style={{ fontFamily: "monospace", fontSize: 12 }}>{p.sku}</td>
+                        <td>{p.brand}</td>
+                        <td>{EUR(p.price)}</td>
+                        <td style={{ color: "#64748b" }}>{EUR(p.original_price)}</td>
+                        <td>
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              fontSize: 15,
+                              color:
+                                stock === null
+                                  ? "#94a3b8"
+                                  : stock === 0
+                                    ? "#dc2626"
+                                    : stock <= 5
+                                      ? "#b45309"
+                                      : "#15803d",
+                            }}
+                          >
+                            {stock === null ? "—" : stock}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={badge.cls}>{badge.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="admin-pagination">
+                <span className="admin-pagination__info">
+                  {(safePage - 1) * PAGE_SIZE + 1}–
+                  {Math.min(safePage * PAGE_SIZE, filtered.length)} de{" "}
+                  {filtered.length}
+                </span>
+                <div className="admin-pagination__pages">
+                  <button
+                    className="admin-btn admin-btn--sm admin-btn--secondary"
+                    disabled={safePage <= 1}
+                    onClick={() => setPage((p) => p - 1)}
+                  >
+                    ← Anterior
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(
+                      (p) =>
+                        p === 1 ||
+                        p === totalPages ||
+                        Math.abs(p - safePage) <= 2,
+                    )
+                    .map((p, idx, arr) => (
+                      <span key={p}>
+                        {idx > 0 && arr[idx - 1] !== p - 1 && (
+                          <span style={{ padding: "0 4px", color: "#94a3b8" }}>…</span>
+                        )}
+                        <button
+                          className={`admin-btn admin-btn--sm ${
+                            p === safePage
+                              ? "admin-btn--primary"
+                              : "admin-btn--secondary"
+                          }`}
+                          onClick={() => setPage(p)}
                         >
-                          {p.stock}
-                        </span>
-                      </td>
-                      <td>{p.min_stock}</td>
-                      <td>{EUR(p.cost_price ?? 0)}</td>
-                      <td>{EUR(p.stock * (p.cost_price ?? 0))}</td>
-                      <td>
-                        <span className={STATUS_BADGE[s]}>{STATUS_LABEL[s]}</span>
-                      </td>
-                      <td>
-                        <div style={{ display: "flex", gap: 6 }}>
-                          <button
-                            className="admin-btn admin-btn--sm admin-btn--primary"
-                            onClick={() => openAdjust(p)}
-                          >
-                            Ajustar Stock
-                          </button>
-                          <button
-                            className="admin-btn admin-btn--sm admin-btn--secondary"
-                            onClick={() => openHistory(p)}
-                          >
-                            Historial
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                          {p}
+                        </button>
+                      </span>
+                    ))}
+                  <button
+                    className="admin-btn admin-btn--sm admin-btn--secondary"
+                    disabled={safePage >= totalPages}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Siguiente →
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
-
-      {/* ── Adjust stock modal ───────────────────────────────────────── */}
-      {adjustProduct && (
-        <div className="admin-modal-overlay" onClick={() => setAdjustProduct(null)}>
-          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="admin-modal__header">
-              <h2 className="admin-modal__title">Ajustar Stock — {adjustProduct.name}</h2>
-              <button className="admin-modal__close" onClick={() => setAdjustProduct(null)}>
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="admin-modal__body">
-              <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
-                Stock actual:{" "}
-                <strong style={{ color: "#0f172a" }}>{adjustProduct.stock}</strong>
-              </p>
-
-              <div className="admin-field">
-                <label className="admin-label">Tipo de movimiento</label>
-                <select
-                  className="admin-select"
-                  value={adjustType}
-                  onChange={(e) => setAdjustType(e.target.value as MovementType)}
-                >
-                  <option value="in">Entrada</option>
-                  <option value="out">Salida</option>
-                  <option value="adjustment">Ajuste (fijar cantidad)</option>
-                </select>
-              </div>
-
-              <div className="admin-field">
-                <label className="admin-label">Cantidad</label>
-                <input
-                  className="admin-input"
-                  type="number"
-                  min="0"
-                  value={adjustQty}
-                  onChange={(e) => setAdjustQty(e.target.value)}
-                  placeholder={adjustType === "adjustment" ? "Nuevo stock total" : "Cantidad"}
-                />
-              </div>
-
-              <div className="admin-field">
-                <label className="admin-label">Notas</label>
-                <textarea
-                  className="admin-textarea"
-                  value={adjustNotes}
-                  onChange={(e) => setAdjustNotes(e.target.value)}
-                  placeholder="Motivo del ajuste..."
-                />
-              </div>
-            </div>
-            <div className="admin-modal__footer">
-              <button
-                className="admin-btn admin-btn--secondary"
-                onClick={() => setAdjustProduct(null)}
-              >
-                Cancelar
-              </button>
-              <button
-                className="admin-btn admin-btn--primary"
-                disabled={saving || !adjustQty}
-                onClick={submitAdjust}
-              >
-                {saving ? "Guardando…" : "Guardar movimiento"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Movement history modal ───────────────────────────────────── */}
-      {historyProduct && (
-        <div className="admin-modal-overlay" onClick={() => setHistoryProduct(null)}>
-          <div
-            className="admin-modal admin-modal--lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="admin-modal__header">
-              <h2 className="admin-modal__title">
-                Historial de Movimientos — {historyProduct.name}
-              </h2>
-              <button className="admin-modal__close" onClick={() => setHistoryProduct(null)}>
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="admin-modal__body" style={{ padding: 0 }}>
-              {loadingMovements ? (
-                <div className="admin-loading">
-                  <div className="admin-spinner" />
-                </div>
-              ) : movements.length === 0 ? (
-                <div className="admin-empty">
-                  <p className="admin-empty__title">Sin movimientos</p>
-                  <p className="admin-empty__text">
-                    Este producto no tiene movimientos de stock registrados.
-                  </p>
-                </div>
-              ) : (
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Tipo</th>
-                        <th>Cantidad</th>
-                        <th>Stock Anterior</th>
-                        <th>Stock Nuevo</th>
-                        <th>Notas</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {movements.map((m) => (
-                        <tr key={m.id}>
-                          <td>
-                            {new Date(m.created_at).toLocaleDateString("es-ES", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </td>
-                          <td>
-                            <span
-                              className={`admin-badge admin-badge--${
-                                m.type === "in" || m.type === "return"
-                                  ? "green"
-                                  : m.type === "out"
-                                    ? "red"
-                                    : "amber"
-                              }`}
-                            >
-                              {MOVEMENT_LABELS[m.type] ?? m.type}
-                            </span>
-                          </td>
-                          <td style={{ fontWeight: 600 }}>{m.quantity}</td>
-                          <td>{m.prev_stock}</td>
-                          <td>{m.new_stock}</td>
-                          <td style={{ color: "#64748b", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {m.notes || "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-            <div className="admin-modal__footer">
-              <button
-                className="admin-btn admin-btn--secondary"
-                onClick={() => setHistoryProduct(null)}
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AdminShell>
   );
 }
