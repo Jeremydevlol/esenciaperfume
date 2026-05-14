@@ -53,15 +53,26 @@ export function getMarcas(): string[] {
   return Array.from(set).sort();
 }
 
-/** Devuelve marcas únicas normalizadas (mayúsculas, sin duplicados de casing),
- *  ordenadas alfabéticamente, con el número de productos de cada una. */
+// Categorías que se consideran perfumería
+const CATS_PERFUME = new Set([
+  "mujer", "hombre", "infantil", "nicho", "descatalogados", "outlet",
+]);
+
+// Entradas que aparecen como "marca" pero son categorías o basura
+const MARCAS_EXCLUIDAS = new Set([
+  "VARIOS", "NIÑOS", "MUJER", "HOMBRE", "UNISEX", "INFANTIL",
+  "NICHO", "OUTLET", "DESCATALOGADOS",
+]);
+
+/** Devuelve marcas únicas de perfumería, ordenadas alfabéticamente */
 export function getMarcasNormalizadas(): { marca: string; count: number }[] {
   const map = new Map<string, number>();
   for (const p of getTiendaProductos()) {
     if (!p.marca) continue;
     const key = p.marca.toUpperCase().trim();
-    // Filtrar nombres con problemas de encoding (contienen Ã)
     if (key.includes("Ã")) continue;
+    if (MARCAS_EXCLUIDAS.has(key)) continue;
+    if (!CATS_PERFUME.has(p.categoria)) continue;
     map.set(key, (map.get(key) ?? 0) + 1);
   }
   return Array.from(map.entries())
@@ -69,7 +80,7 @@ export function getMarcasNormalizadas(): { marca: string; count: number }[] {
     .sort((a, b) => a.marca.localeCompare(b.marca, "es"));
 }
 
-/** Top N marcas por número de productos */
+/** Top N marcas de perfumería por número de productos */
 export function getTopMarcas(n = 24): { marca: string; count: number }[] {
   return getMarcasNormalizadas()
     .sort((a, b) => b.count - a.count)

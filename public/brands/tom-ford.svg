@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60" viewBox="0 0 120 60">
+  <rect width="120" height="60" fill="#1a1a1a" rx="4"/>
+  <text x="60" y="24" text-anchor="middle" font-family="Arial Narrow, Arial, sans-serif" font-size="16" font-weight="bold" letter-spacing="1" fill="#c8a84b">TOM</text>
+  <text x="60" y="44" text-anchor="middle" font-family="Arial Narrow, Arial, sans-serif" font-size="12" letter-spacing="2" fill="#c8a84b">FORD</text>
+</svg>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
+import { trackAddToCart } from "@/lib/tracking";
 
 type Props = {
   product: { sku: string; name: string; price: number; imageUrl: string };
@@ -13,6 +14,7 @@ export function AddToCartButton({ product }: Props) {
 
   function handleAdd() {
     addItem(product);
+    trackAddToCart(product.sku, product.name, product.price);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }

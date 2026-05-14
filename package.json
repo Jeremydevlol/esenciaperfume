@@ -3,24 +3,29 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "env -u npm_config_devdir next dev --webpack -H 0.0.0.0",
+    "dev": "env -u npm_config_devdir next dev -H 0.0.0.0",
     "dev:turbo": "env -u npm_config_devdir next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "prepare:edp-images": "node scripts/prepare-edp-images.mjs",
-    "download:perfumedigital-images": "node scripts/download-perfumedigital-images.mjs"
+    "download:perfumedigital-images": "node scripts/download-perfumedigital-images.mjs",
+    "migrate:supabase": "node scripts/migrate-to-supabase.mjs",
+    "db:init": "node scripts/init-local-db.mjs"
   },
   "dependencies": {
-    "@next/swc-wasm-nodejs": "^16.2.3",
     "@paypal/react-paypal-js": "^9.1.1",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.105.4",
     "next": "16.2.2",
+    "nodemailer": "^8.0.7",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

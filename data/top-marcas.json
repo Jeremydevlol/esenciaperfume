@@ -1,1 +1,122 @@
-[{"marca":"MAYBELLINE","count":184},{"marca":"LOREAL","count":172},{"marca":"CALVIN KLEIN","count":114},{"marca":"PACO RABANNE","count":91},{"marca":"HUGO BOSS","count":91},{"marca":"DOLCE & GABBANA","count":86},{"marca":"XERJOFF","count":82},{"marca":"CHANEL","count":69},{"marca":"LANCOME","count":69},{"marca":"ELIZABETH ARDEN","count":67},{"marca":"GUERLAIN","count":67},{"marca":"BIOTHERM","count":64},{"marca":"GIORGIO ARMANI","count":63},{"marca":"MONTALE","count":57},{"marca":"CHRISTIAN DIOR","count":57},{"marca":"DEBORAH MILANO","count":57},{"marca":"Y.S.LAURENT","count":56},{"marca":"DONNA KARAN","count":55},{"marca":"MARIONNAUD","count":55},{"marca":"GUILLAB","count":52},{"marca":"DAVIDOFF","count":52},{"marca":"CAROLINA HERRERA","count":51},{"marca":"JEAN PAUL GAULTIER","count":51},{"marca":"CLARINS","count":51},{"marca":"NIKE","count":49},{"marca":"TOUS","count":49},{"marca":"GIANNI VERSACE","count":46},{"marca":"KENZO","count":45},{"marca":"GIVENCHY","count":45},{"marca":"ISSEY MIYAKE","count":44}]
+[
+  {
+    "marca": "CALVIN KLEIN",
+    "count": 114
+  },
+  {
+    "marca": "PACO RABANNE",
+    "count": 91
+  },
+  {
+    "marca": "HUGO BOSS",
+    "count": 91
+  },
+  {
+    "marca": "DOLCE & GABBANA",
+    "count": 86
+  },
+  {
+    "marca": "XERJOFF",
+    "count": 82
+  },
+  {
+    "marca": "GIORGIO ARMANI",
+    "count": 63
+  },
+  {
+    "marca": "ELIZABETH ARDEN",
+    "count": 61
+  },
+  {
+    "marca": "GUERLAIN",
+    "count": 61
+  },
+  {
+    "marca": "MONTALE",
+    "count": 57
+  },
+  {
+    "marca": "DONNA KARAN",
+    "count": 55
+  },
+  {
+    "marca": "DAVIDOFF",
+    "count": 52
+  },
+  {
+    "marca": "CAROLINA HERRERA",
+    "count": 51
+  },
+  {
+    "marca": "JEAN PAUL GAULTIER",
+    "count": 50
+  },
+  {
+    "marca": "GUILLAB",
+    "count": 49
+  },
+  {
+    "marca": "NIKE",
+    "count": 49
+  },
+  {
+    "marca": "TOUS",
+    "count": 49
+  },
+  {
+    "marca": "GIANNI VERSACE",
+    "count": 46
+  },
+  {
+    "marca": "KENZO",
+    "count": 45
+  },
+  {
+    "marca": "GIVENCHY",
+    "count": 45
+  },
+  {
+    "marca": "ISSEY MIYAKE",
+    "count": 44
+  },
+  {
+    "marca": "ADOLFO DOMINGUEZ",
+    "count": 43
+  },
+  {
+    "marca": "CACHAREL",
+    "count": 42
+  },
+  {
+    "marca": "Y.S.LAURENT",
+    "count": 42
+  },
+  {
+    "marca": "SAPHIR",
+    "count": 39
+  },
+  {
+    "marca": "RALPH LAUREN",
+    "count": 39
+  },
+  {
+    "marca": "BVLGARI",
+    "count": 39
+  },
+  {
+    "marca": "CHLOE",
+    "count": 38
+  },
+  {
+    "marca": "LOEWE",
+    "count": 38
+  },
+  {
+    "marca": "BURBERRY",
+    "count": 38
+  },
+  {
+    "marca": "ROCHAS",
+    "count": 34
+  }
+]

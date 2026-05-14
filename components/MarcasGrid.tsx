@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { getBrandLogoUrl } from "@/data/brand-logos";
 
 type BrandItem = { marca: string; count: number };
 
@@ -9,6 +10,36 @@ type Props = {
   groups: Record<string, BrandItem[]>;
   letters: string[];
 };
+
+/** Tarjeta de marca con logo + fallback a letra inicial */
+function BrandCard({ marca, count }: BrandItem) {
+  const logoUrl = getBrandLogoUrl(marca);
+  const [imgFailed, setImgFailed] = useState(false);
+  const showLogo = !!logoUrl && !imgFailed;
+
+  return (
+    <Link
+      href={`/shop?marca=${encodeURIComponent(marca)}`}
+      className="marcas-card"
+    >
+      <div className="marcas-card__logo-wrap">
+        {showLogo ? (
+          <img
+            src={logoUrl!}
+            alt={marca}
+            className="marcas-card__logo-img"
+            onError={() => setImgFailed(true)}
+            loading="lazy"
+          />
+        ) : (
+          <span className="marcas-card__initial">{marca[0]}</span>
+        )}
+      </div>
+      <span className="marcas-card__name">{marca}</span>
+      <span className="marcas-card__count">{count} prod.</span>
+    </Link>
+  );
+}
 
 export function MarcasGrid({ groups, letters }: Props) {
   const [search, setSearch] = useState("");
@@ -106,16 +137,8 @@ export function MarcasGrid({ groups, letters }: Props) {
               <h2 className="marcas-group__letter">{key}</h2>
             )}
             <div className="marcas-group__grid">
-              {items.map(({ marca, count }) => (
-                <Link
-                  key={marca}
-                  href={`/shop?marca=${encodeURIComponent(marca)}`}
-                  className="marcas-card"
-                >
-                  <span className="marcas-card__initial">{marca[0]}</span>
-                  <span className="marcas-card__name">{marca}</span>
-                  <span className="marcas-card__count">{count} prod.</span>
-                </Link>
+              {items.map((item) => (
+                <BrandCard key={item.marca} {...item} />
               ))}
             </div>
           </div>

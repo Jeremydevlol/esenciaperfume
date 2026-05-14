@@ -7,6 +7,7 @@ import { useCart } from "@/lib/cart-context";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { useRouter } from "next/navigation";
+import { trackBeginCheckout } from "@/lib/tracking";
 
 function formatEuro(n: number) {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
@@ -113,6 +114,63 @@ export default function CheckoutPage() {
     : payMethod === "reembolso"
       ? totalReembolso
       : totalBase;
+
+  // Track begin_checkout on page load
+  useEffect(() => {
+    if (items.length === 0) return;
+    trackBeginCheckout(
+      totalPrice,
+      items.map((i) => ({
+        sku: i.sku,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity,
+      })),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function buildErpPayload(paymentMethod: string, paymentRef: string) {
+    const nameParts = nombre.trim().split(/\s+/);
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
+
+    return {
+      items: items.map((i) => ({
+        sku: i.sku,
+        name: i.name,
+        quantity: i.quantity,
+        price: i.price,
+      })),
+      customer: {
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        phone: telefono,
+      },
+      shipping: {
+        name: nombre,
+        phone: telefono,
+        address: {
+          street: direccion,
+          city: ciudad,
+          province: provincia,
+          postal_code: cp,
+          country: provincia === "Portugal" ? "PT" : "ES",
+        },
+      },
+      payment_method: paymentMethod,
+      payment_ref: paymentRef,
+      subtotal: totalPrice,
+      shipping_cost: envio,
+      total:
+        paymentMethod === "paypal"
+          ? totalPaypal
+          : paymentMethod === "contrareembolso"
+            ? totalReembolso
+            : totalBase,
+    };
+  }
 
   // Auto-submit hidden form when TPV params arrive
   useEffect(() => {
@@ -239,6 +297,12 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error("Error al conectar con el TPV");
 
       const params: TpvParams = await res.json();
+
+      const orderData = buildErpPayload("tpv", params.Num_operacion);
+      try {
+        localStorage.setItem("pending_order_data", JSON.stringify(orderData));
+      } catch { /* ignore storage errors */ }
+
       setTpvParams(params);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error inesperado. Inténtalo de nuevo.");
@@ -253,7 +317,6 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      // Registra el pedido en el servidor (misma ruta que confirmación pero sin TPV)
       const res = await fetch("/api/pedido/contrareembolso", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -261,16 +324,15 @@ export default function CheckoutPage() {
           nombre, email, telefono,
           direccion, cp, ciudad, provincia,
           items: items.map((i) => ({ sku: i.sku, name: i.name, qty: i.quantity, price: i.price })),
-          totalEuros: totalFinal,
+          totalEuros: totalReembolso,
         }),
       });
 
-      // Si la ruta no existe aún, igualmente redirigimos a confirmación
-      if (res.ok || res.status === 404) {
-        router.push("/confirmacion?metodo=reembolso");
-      } else {
-        throw new Error("Error al registrar el pedido");
-      }
+      if (!res.ok) throw new Error("Error al registrar el pedido");
+
+      const data = await res.json();
+      const pedidoParam = data.order_number ? `&pedido=${data.order_number}` : "";
+      router.push(`/confirmacion?metodo=reembolso${pedidoParam}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error inesperado. Inténtalo de nuevo.");
       setLoading(false);
@@ -665,17 +727,21 @@ export default function CheckoutPage() {
                                 return data.orderId;
                               }}
                               onApprove={async (data) => {
+                                const orderPayload = buildErpPayload("paypal", data.orderID || "");
+                                const { payment_method: _pm, payment_ref: _pr, ...orderData } = orderPayload;
+
                                 const res = await fetch("/api/paypal/capturar-pago", {
                                   method: "POST",
                                   headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ orderId: data.orderID }),
+                                  body: JSON.stringify({ orderId: data.orderID, orderData }),
                                 });
                                 const result = await res.json();
                                 if (!res.ok || result.status !== "COMPLETED") {
                                   setPaypalError("El pago no se completó correctamente. Inténtalo de nuevo.");
                                   return;
                                 }
-                                router.push(`/confirmacion?paypal=1&tx=${result.txId}`);
+                                const pedidoParam = result.order_number ? `&pedido=${result.order_number}` : "";
+                                router.push(`/confirmacion?paypal=1&tx=${result.txId}${pedidoParam}`);
                               }}
                               onError={(err) => {
                                 console.error("PayPal error:", err);

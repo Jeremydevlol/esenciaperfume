@@ -41,6 +41,9 @@ yarn-error.log*
 /public/assets/images/edp/
 /perfumedigital_productos/
 
+# BD local (JSON)
+/data/db/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -10,6 +10,8 @@ import { CartProvider } from "@/lib/cart-context";
 import { CartSidebar } from "@/components/CartSidebar";
 import { EntryPopup } from "@/components/EntryPopup";
 import { CartToast } from "@/components/CartToast";
+import { GoogleAnalytics } from "@/components/tracking/GoogleAnalytics";
+import { MetaPixel } from "@/components/tracking/MetaPixel";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -70,6 +72,8 @@ export default function RootLayout({
           <CartToast />
           <EntryPopup />
         </CartProvider>
+        <GoogleAnalytics />
+        <MetaPixel />
       </body>
     </html>
   );

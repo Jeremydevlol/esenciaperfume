@@ -8,6 +8,7 @@ import { HeroSection } from "@/components/home/HeroSection";
 import { ProductSliderSection } from "@/components/home/ProductSliderSection";
 import { FeatureStrip } from "@/components/home/FeatureStrip";
 import { ProductCard } from "@/components/ProductCard";
+import { CatNav } from "@/components/CatNav";
 
 export const metadata: Metadata = {
   title: { absolute: SITE_DEFAULT_TITLE },
@@ -57,28 +58,8 @@ export default function HomePage() {
         {/* Hero full-width */}
         <HeroSection />
 
-        {/* Category cards */}
-        <section className="home-cats">
-          <div className="container">
-            <div className="home-cats__grid">
-              {[
-                { href: "/shop?cat=mujer",  img: "/assets/images/banner2.png", label: "Perfumes Mujer",    sub: "Las fragancias más exclusivas" },
-                { href: "/shop?cat=hombre", img: "/assets/images/banner1.png", label: "Perfumes Hombre",   sub: "Tu fragancia perfecta" },
-                { href: "/shop?cat=infantil", img: "/assets/images/banner3.png", label: "Unisex & Infantil", sub: "Últimos lanzamientos" },
-              ].map((cat) => (
-                <Link key={cat.label} href={cat.href} className="home-cat-card">
-                  <div className="home-cat-card__bg" style={{ backgroundImage: `url('${cat.img}')` }} />
-                  <div className="home-cat-card__overlay" />
-                  <div className="home-cat-card__info">
-                    <h2 className="home-cat-card__title">{cat.label}</h2>
-                    <p className="home-cat-card__sub">{cat.sub}</p>
-                    <span className="home-cat-card__btn">Ver colección →</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* ── Barra de navegación por categorías (bajo el hero) ── */}
+        <CatNav />
 
         {/* Flash sale slider */}
         <ProductSliderSection

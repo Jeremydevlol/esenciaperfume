@@ -22,7 +22,7 @@ async function getAccessToken(): Promise<string> {
 
 export async function POST(req: NextRequest) {
   try {
-    const { orderId } = await req.json();
+    const { orderId, orderData } = await req.json();
     if (!orderId) return NextResponse.json({ error: "orderId requerido" }, { status: 400 });
 
     const accessToken = await getAccessToken();
@@ -45,7 +45,36 @@ export async function POST(req: NextRequest) {
     const status  = capture?.status;
     const txId    = capture?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
 
-    return NextResponse.json({ status, txId });
+    let orderNumber = "";
+
+    if (status === "COMPLETED" && orderData) {
+      try {
+        const erpPayload = {
+          ...orderData,
+          payment_method: "paypal",
+          payment_ref: txId || orderId,
+        };
+
+        const origin = req.nextUrl.origin;
+        const erpRes = await fetch(`${origin}/api/erp/orders`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(erpPayload),
+        });
+
+        const erpData = await erpRes.json();
+
+        if (erpRes.ok && erpData.order_number) {
+          orderNumber = erpData.order_number;
+        } else {
+          console.error("Error ERP (PayPal):", erpData.error);
+        }
+      } catch (erpErr) {
+        console.error("Error creando pedido ERP (PayPal):", erpErr);
+      }
+    }
+
+    return NextResponse.json({ status, txId, order_number: orderNumber });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error inesperado";
     return NextResponse.json({ error: message }, { status: 500 });

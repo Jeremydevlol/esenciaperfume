@@ -1,17 +1,45 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 
+const PENDING_ORDER_KEY = "pending_order_data";
+
 export default function PagoOkPage() {
   const { clearCart } = useCart();
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
-  // Vaciar el carrito al llegar a la página de éxito
   useEffect(() => {
     clearCart();
+
+    const raw = localStorage.getItem(PENDING_ORDER_KEY);
+    if (!raw) return;
+    localStorage.removeItem(PENDING_ORDER_KEY);
+
+    try {
+      const orderData = JSON.parse(raw);
+      fetch("/api/erp/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.order_number) {
+            setOrderNumber(data.order_number);
+          } else {
+            console.error("Error ERP (TPV):", data.error);
+          }
+        })
+        .catch((err) => {
+          console.error("Error creando pedido ERP (TPV):", err);
+        });
+    } catch {
+      /* ignore parse errors */
+    }
   }, [clearCart]);
 
   return (
@@ -35,6 +63,11 @@ export default function PagoOkPage() {
           <p className="tpv-result-page__text">
             Gracias por tu compra. Recibirás un correo de confirmación en breve con los detalles de tu pedido.
           </p>
+          {orderNumber && (
+            <p className="tpv-result-page__text">
+              Número de pedido: <strong>{orderNumber}</strong>
+            </p>
+          )}
           <p className="tpv-result-page__text tpv-result-page__text--small">
             Si tienes alguna duda puedes contactar con nosotros en{" "}
             <a href="mailto:info@perfumesyaromas.com">info@perfumesyaromas.com</a>
