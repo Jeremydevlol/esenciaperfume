@@ -98,7 +98,7 @@ export default function InventarioPage() {
     setLoadingStock(true);
     stockAbort.current = new AbortController();
     const allSkus = filtered.map((p) => p.sku);
-    const BATCH = 20;
+    const BATCH = 15;
     let done = 0;
 
     try {

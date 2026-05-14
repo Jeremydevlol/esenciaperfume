@@ -1,12 +1,2 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/stock-sync",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/stock-sync?full=1",
-      "schedule": "0 */6 * * *"
-    }
-  ]
 }
