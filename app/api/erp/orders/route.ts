@@ -161,8 +161,9 @@ export async function POST(req: NextRequest) {
       confirmationHtml,
     ).catch((err) => console.error("[Email] Error enviando confirmación:", err));
 
-    // Non-blocking: notificación interna a la tienda (Guillab) de cada pedido nuevo
+    // Non-blocking: notificación interna a la tienda (Guillab) + perfumedigital
     const notifyEmail = process.env.ORDER_NOTIFY_EMAIL || "info@guillab.com";
+    const notifyExtra = "info@perfumedigital.com";
     if (notifyEmail) {
       const numero = String(order.order_number).padStart(4, "0");
       const cliente =
@@ -187,6 +188,13 @@ export async function POST(req: NextRequest) {
         `🛎️ Nuevo pedido #${numero} — ${cliente}`,
         adminHtml,
       ).catch((err) => console.error("[Email] Error notificando a la tienda:", err));
+
+      // Enviar la misma orden también a perfumedigital
+      sendEmail(
+        notifyExtra,
+        `🛎️ Nuevo pedido #${numero} — ${cliente}`,
+        adminHtml,
+      ).catch((err) => console.error("[Email] Error notificando a perfumedigital:", err));
     }
 
     return NextResponse.json({

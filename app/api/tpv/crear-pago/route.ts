@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { totalEuros } = body as { totalEuros: number };
+    const { totalEuros, url_ok, url_nok } = body as { totalEuros: number; url_ok?: string; url_nok?: string };
 
     if (!totalEuros || totalEuros <= 0) {
       return NextResponse.json({ error: "Importe inválido" }, { status: 400 });
@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
     const baseUrl      = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
     const Num_operacion = generarNumOperacion();
     const Importe       = eurosToCentimos(totalEuros);
-    const URL_OK        = `${baseUrl}/checkout/ok`;
-    const URL_NOK       = `${baseUrl}/checkout/nok`;
+    const URL_OK        = url_ok  ?? `${baseUrl}/checkout/ok`;
+    const URL_NOK       = url_nok ?? `${baseUrl}/checkout/nok`;
 
     const Firma = calcularFirmaCECA({ Num_operacion, Importe, URL_OK, URL_NOK });
 
