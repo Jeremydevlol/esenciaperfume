@@ -161,6 +161,34 @@ export async function POST(req: NextRequest) {
       confirmationHtml,
     ).catch((err) => console.error("[Email] Error enviando confirmación:", err));
 
+    // Non-blocking: notificación interna a la tienda (Guillab) de cada pedido nuevo
+    const notifyEmail = process.env.ORDER_NOTIFY_EMAIL || "info@guillab.com";
+    if (notifyEmail) {
+      const numero = String(order.order_number).padStart(4, "0");
+      const cliente =
+        shipping?.name ||
+        `${customer.first_name ?? ""} ${customer.last_name ?? ""}`.trim() ||
+        "Cliente";
+      const adminHtml = `
+        <div style="font-family:system-ui,Arial,sans-serif;color:#111">
+          <h2 style="margin:0 0 12px">🛎️ Nuevo pedido #${numero}</h2>
+          <table style="border-collapse:collapse;font-size:14px">
+            <tr><td style="padding:2px 12px 2px 0;color:#666">Cliente</td><td><strong>${cliente}</strong></td></tr>
+            <tr><td style="padding:2px 12px 2px 0;color:#666">Email</td><td>${customer.email}</td></tr>
+            <tr><td style="padding:2px 12px 2px 0;color:#666">Teléfono</td><td>${shipping?.phone || customer.phone || "—"}</td></tr>
+            <tr><td style="padding:2px 12px 2px 0;color:#666">Pago</td><td>${payment_method || "—"}</td></tr>
+            <tr><td style="padding:2px 12px 2px 0;color:#666">Total</td><td><strong>${(total || 0).toFixed(2)} €</strong></td></tr>
+          </table>
+        </div>
+        ${confirmationHtml}
+      `;
+      sendEmail(
+        notifyEmail,
+        `🛎️ Nuevo pedido #${numero} — ${cliente}`,
+        adminHtml,
+      ).catch((err) => console.error("[Email] Error notificando a la tienda:", err));
+    }
+
     return NextResponse.json({
       success: true,
       order_id: order.id,

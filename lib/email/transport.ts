@@ -9,6 +9,10 @@ const transporter = process.env.SMTP_HOST
         user: process.env.SMTP_USER ?? "",
         pass: process.env.SMTP_PASS ?? "",
       },
+      // El cert del hosting (Dinahosting) usa otro hostname; validamos contra él
+      ...(process.env.SMTP_TLS_SERVERNAME
+        ? { tls: { servername: process.env.SMTP_TLS_SERVERNAME } }
+        : {}),
     })
   : null;
 
